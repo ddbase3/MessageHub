@@ -54,7 +54,7 @@ final class MessageQueueAdminDisplay implements IDisplay {
 				return $this->json(['ok' => true, 'mode' => 'cancel'], $final);
 			}
 			$request = $this->normalizeListRequest($payload);
-			$page = $this->queueRepository->page($request);
+			$page = $this->repositoryListPage(fn(array $listRequest): array => $this->queueRepository->page($listRequest), $request);
 			return $this->json($this->pageResponse($page, $request), $final);
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);

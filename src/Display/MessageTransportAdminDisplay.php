@@ -58,19 +58,48 @@ final class MessageTransportAdminDisplay implements IDisplay {
 				$this->settingsStore->save();
 				return $this->json(['ok' => true], $final);
 			}
-			$rows = [];
-			foreach($this->transportRegistry->getTransports() as $name => $transport) {
-				$rows[] = [
-					'name' => $name,
-					'label' => $transport->getLabel(),
-					'is_default' => $name === $this->transportRegistry->getDefaultTransportName() ? 1 : 0,
-					'schema_json' => json_encode($transport->getSchema(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
-					'settings_json' => json_encode($this->transportRegistry->getTransportSettings($name), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
-				];
-			}
-			return $this->json(['ok' => true, 'mode' => 'page', 'data' => $rows, 'total' => count($rows), 'page' => 1, 'pageSize' => 250, 'totalPages' => 1, 'hasMore' => false], $final);
+
+			$request = $this->normalizeListRequest($payload);
+			$page = $this->listPageFromRows($this->loadRows(), $request);
+
+			return $this->json($this->pageResponse($page, $request), $final);
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);
 		}
+	}
+
+	private function loadRows(): array {
+		$rows = [];
+		foreach($this->transportRegistry->getTransports() as $name => $transport) {
+			$rows[] = [
+				'name' => $name,
+				'label' => $transport->getLabel(),
+				'is_default' => $name === $this->transportRegistry->getDefaultTransportName() ? 1 : 0,
+				'schema_json' => json_encode($transport->getSchema(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+				'settings_json' => json_encode($this->transportRegistry->getTransportSettings($name), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+			];
+		}
+
+		return $rows;
+	}
+
+	private function filterRows(array $rows, array $request): array {
+		$search = strtolower((string)($request['search'] ?? ''));
+		$filters = is_array($request['filters'] ?? null) ? $request['filters'] : [];
+
+		return array_values(array_filter($rows, function(array $row) use ($search, $filters): bool {
+			if($search !== '') {
+				$haystack = strtolower(implode(' ', [(string)($row['name'] ?? ''), (string)($row['label'] ?? ''), (string)($row['settings_json'] ?? ''), (string)($row['schema_json'] ?? '')]));
+				if(strpos($haystack, $search) === false) { return false; }
+			}
+
+			$name = isset($filters['name']) && is_scalar($filters['name']) ? strtolower(trim((string)$filters['name'])) : '';
+			if($name !== '' && strpos(strtolower((string)($row['name'] ?? '')), $name) === false) { return false; }
+
+			$default = isset($filters['is_default']) && is_scalar($filters['is_default']) ? trim((string)$filters['is_default']) : '';
+			if($default !== '' && (string)(int)($row['is_default'] ?? 0) !== $default) { return false; }
+
+			return true;
+		}));
 	}
 }

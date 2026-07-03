@@ -47,7 +47,7 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 				return $this->json(['ok' => true, 'mode' => 'detail', 'found' => $detail !== null, 'detail' => $detail], $final);
 			}
 			$request = $this->normalizeListRequest($payload);
-			$page = $this->deliveryRepository->page($request);
+			$page = $this->repositoryListPage(fn(array $listRequest): array => $this->deliveryRepository->page($listRequest), $request);
 			return $this->json($this->pageResponse($page, $request), $final);
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);

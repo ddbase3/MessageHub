@@ -55,7 +55,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 				return $this->json(['ok' => true, 'mode' => 'delete'], $final);
 			}
 			$request = $this->normalizeListRequest($payload);
-			$page = $this->templateRepository->page($request);
+			$page = $this->repositoryListPage(fn(array $listRequest): array => $this->templateRepository->page($listRequest), $request);
 			return $this->json($this->pageResponse($page, $request), $final);
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);
