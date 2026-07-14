@@ -26,15 +26,21 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 		$now = $this->now();
 		$exists = $this->getById($variant->getId()) !== null;
 
+		if($variant->isFallback()) {
+			$this->database->nonQuery(
+				'UPDATE base3_messaging_variants SET fallback_flag=0 WHERE template_id=' . $this->quote($variant->getTemplateId()) . ' AND id<>' . $this->quote($variant->getId())
+			);
+		}
+
 		if($exists) {
 			$this->database->nonQuery(
-				'UPDATE base3_messaging_variants SET template_id=' . $this->quote($variant->getTemplateId()) . ', language=' . $this->quote($variant->getLanguage()) . ', subject=' . $this->quote($variant->getSubject()) . ', body_text=' . $this->quote($variant->getBodyText()) . ', body_html=' . $this->quote($variant->getBodyHtml()) . ', enabled=' . $this->boolInt($variant->isEnabled()) . ', updated_at=' . $this->quote($now) . ' WHERE id=' . $this->quote($variant->getId()) . ' LIMIT 1'
+				'UPDATE base3_messaging_variants SET template_id=' . $this->quote($variant->getTemplateId()) . ', language=' . $this->quote($variant->getLanguage()) . ', subject=' . $this->quote($variant->getSubject()) . ', body_text=' . $this->quote($variant->getBodyText()) . ', body_html=' . $this->quote($variant->getBodyHtml()) . ', fallback_flag=' . $this->boolInt($variant->isFallback()) . ', enabled=' . $this->boolInt($variant->isEnabled()) . ', updated_at=' . $this->quote($now) . ' WHERE id=' . $this->quote($variant->getId()) . ' LIMIT 1'
 			);
 			return;
 		}
 
 		$this->database->nonQuery(
-			'INSERT INTO base3_messaging_variants (id, template_id, language, subject, body_text, body_html, enabled, created_at, updated_at) VALUES (' . $this->quote($variant->getId()) . ', ' . $this->quote($variant->getTemplateId()) . ', ' . $this->quote($variant->getLanguage()) . ', ' . $this->quote($variant->getSubject()) . ', ' . $this->quote($variant->getBodyText()) . ', ' . $this->quote($variant->getBodyHtml()) . ', ' . $this->boolInt($variant->isEnabled()) . ', ' . $this->quote($now) . ', ' . $this->quote($now) . ')'
+			'INSERT INTO base3_messaging_variants (id, template_id, language, subject, body_text, body_html, fallback_flag, enabled, created_at, updated_at) VALUES (' . $this->quote($variant->getId()) . ', ' . $this->quote($variant->getTemplateId()) . ', ' . $this->quote($variant->getLanguage()) . ', ' . $this->quote($variant->getSubject()) . ', ' . $this->quote($variant->getBodyText()) . ', ' . $this->quote($variant->getBodyHtml()) . ', ' . $this->boolInt($variant->isFallback()) . ', ' . $this->boolInt($variant->isEnabled()) . ', ' . $this->quote($now) . ', ' . $this->quote($now) . ')'
 		);
 	}
 
@@ -47,6 +53,12 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 	public function getForTemplate(string $templateId, string $language): ?MessageVariant {
 		$this->ensureStorage();
 		$row = $this->database->singleQuery('SELECT * FROM base3_messaging_variants WHERE template_id=' . $this->quote($templateId) . ' AND language=' . $this->quote($language) . ' AND enabled=1 LIMIT 1');
+		return is_array($row) ? $this->fromRow($row) : null;
+	}
+
+	public function getFallbackForTemplate(string $templateId): ?MessageVariant {
+		$this->ensureStorage();
+		$row = $this->database->singleQuery('SELECT * FROM base3_messaging_variants WHERE template_id=' . $this->quote($templateId) . ' AND fallback_flag=1 AND enabled=1 ORDER BY updated_at DESC LIMIT 1');
 		return is_array($row) ? $this->fromRow($row) : null;
 	}
 
@@ -82,7 +94,16 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 	}
 
 	private function fromRow(array $row): MessageVariant {
-		return new MessageVariant((string)$row['id'], (string)$row['template_id'], (string)$row['language'], (string)$row['subject'], (string)$row['body_text'], (string)($row['body_html'] ?? ''), ((int)($row['enabled'] ?? 0)) === 1);
+		return new MessageVariant(
+			(string)$row['id'],
+			(string)$row['template_id'],
+			(string)$row['language'],
+			(string)$row['subject'],
+			(string)$row['body_text'],
+			(string)($row['body_html'] ?? ''),
+			((int)($row['enabled'] ?? 0)) === 1,
+			((int)($row['fallback_flag'] ?? 0)) === 1
+		);
 	}
 
 	private function rowForAdmin(array $row): array {
@@ -96,6 +117,8 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 			'body_text' => (string)$row['body_text'],
 			'body_html' => (string)($row['body_html'] ?? ''),
 			'body_text_preview' => function_exists('mb_substr') ? mb_substr((string)$row['body_text'], 0, 240) : substr((string)$row['body_text'], 0, 240),
+			'fallback' => (int)($row['fallback_flag'] ?? 0),
+			'fallback_label' => ((int)($row['fallback_flag'] ?? 0)) === 1 ? 'Fallback' : '',
 			'enabled' => (int)($row['enabled'] ?? 0),
 			'enabled_label' => ((int)($row['enabled'] ?? 0)) === 1 ? 'Enabled' : 'Disabled',
 			'created_at' => (string)($row['created_at'] ?? ''),

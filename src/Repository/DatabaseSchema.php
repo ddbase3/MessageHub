@@ -44,13 +44,17 @@ final class DatabaseSchema {
 				subject VARCHAR(255) NOT NULL,
 				body_text LONGTEXT NOT NULL,
 				body_html LONGTEXT NULL,
+				fallback_flag TINYINT(1) NOT NULL DEFAULT 0,
 				enabled TINYINT(1) NOT NULL DEFAULT 1,
 				created_at DATETIME NOT NULL,
 				updated_at DATETIME NOT NULL,
 				UNIQUE KEY uq_base3_msg_var_tpl_lang (template_id, language),
-				KEY idx_base3_msg_var_enabled (enabled, language)
+				KEY idx_base3_msg_var_enabled (enabled, language),
+				KEY idx_base3_msg_var_fallback (template_id, fallback_flag)
 			)
 		");
+
+		$this->ensureVariantFallbackColumn();
 
 		$this->database->nonQuery("
 			CREATE TABLE IF NOT EXISTS base3_messaging_queue (
@@ -122,5 +126,19 @@ final class DatabaseSchema {
 		");
 
 		$this->done = true;
+	}
+
+	private function ensureVariantFallbackColumn(): void {
+		$column = $this->database->singleQuery("SHOW COLUMNS FROM base3_messaging_variants LIKE 'fallback_flag'");
+
+		if(!is_array($column)) {
+			$this->database->nonQuery("ALTER TABLE base3_messaging_variants ADD COLUMN fallback_flag TINYINT(1) NOT NULL DEFAULT 0 AFTER body_html");
+		}
+
+		$index = $this->database->singleQuery("SHOW INDEX FROM base3_messaging_variants WHERE Key_name='idx_base3_msg_var_fallback'");
+
+		if(!is_array($index)) {
+			$this->database->nonQuery("ALTER TABLE base3_messaging_variants ADD KEY idx_base3_msg_var_fallback (template_id, fallback_flag)");
+		}
 	}
 }

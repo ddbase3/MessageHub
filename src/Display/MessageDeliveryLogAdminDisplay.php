@@ -7,6 +7,7 @@ use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
+use MessageHub\Service\MessageFilterOptionService;
 use MessagingFoundation\Api\IMessageDeliveryRepository;
 use Throwable;
 
@@ -19,7 +20,8 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 		private readonly IMvcView $view,
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
-		private readonly IMessageDeliveryRepository $deliveryRepository
+		private readonly IMessageDeliveryRepository $deliveryRepository,
+		private readonly MessageFilterOptionService $filterOptionService
 	) {}
 
 	public static function getName(): string { return 'messagedeliverylogadmindisplay'; }
@@ -35,6 +37,8 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 		$this->view->setTemplate('Display/MessageDeliveryLogAdminDisplay.php');
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
+		$this->view->assign('transport_filter_options', $this->filterOptionService->getDeliveryTransportOptions());
+		$this->view->assign('type_filter_options', $this->filterOptionService->getDeliveryTypeOptions());
 		return $this->view->loadTemplate();
 	}
 

@@ -25,6 +25,7 @@ use MessageHub\Repository\DatabaseMessageTemplateRepository;
 use MessageHub\Repository\DatabaseMessageVariantRepository;
 use MessageHub\Repository\DatabaseSchema;
 use MessageHub\Service\MessageDeliveryService;
+use MessageHub\Service\MessageFilterOptionService;
 use MessageHub\Service\MessageIdGenerator;
 use MessageHub\Service\MessageQueueService;
 use MessageHub\Service\MessageRenderer;
@@ -47,6 +48,10 @@ final class MessageHubPlugin implements IPlugin {
 			->set(self::getName(), $this, IContainer::SHARED)
 			->set(DatabaseSchema::class, fn($c) => new DatabaseSchema($c->get(IDatabase::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IMessageIdGenerator::class, fn() => new MessageIdGenerator(), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(MessageFilterOptionService::class, fn($c) => new MessageFilterOptionService(
+				$c->get(IDatabase::class),
+				$c->get(DatabaseSchema::class)
+			), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IMessageTemplateRepository::class, fn($c) => new DatabaseMessageTemplateRepository(
 				$c->get(IDatabase::class),
 				$c->get(DatabaseSchema::class),

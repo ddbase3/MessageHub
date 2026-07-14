@@ -45,13 +45,13 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 	.messagehub-pill { display: inline-flex; align-items: center; padding: 1px 6px; border: 1px solid #d6d6d6; border-radius: 999px; background: #fafafa; font-size: 11px; line-height: 1.35; color: #444; white-space: nowrap; }
 	.messagehub-pill-sent, .messagehub-pill-enabled { background: #eef7ee; border-color: #bddfbd; color: #226622; }
 	.messagehub-pill-failed, .messagehub-pill-disabled { background: #fff0f0; border-color: #e4b9b9; color: #8a1f1f; }
-	.messagehub-pill-processing { background: #edf6ff; border-color: #c3dff5; color: #284f7c; }
+	.messagehub-pill-processing, .messagehub-pill-fallback { background: #edf6ff; border-color: #c3dff5; color: #284f7c; }
 
 	.messagehub-dialog-surface { width: min(920px, 100%); max-height: min(780px, 100%); }
 	.messagehub-dialog-surface .md-shell-body { display: grid; gap: 12px; }
 	.messagehub-editor { display: grid; gap: 12px; min-width: 0; }
 	.messagehub-form-row { display: grid; gap: 5px; }
-	.messagehub-form-row-inline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+	.messagehub-form-row-inline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 	.messagehub-form-label { color: #555; font-size: 12px; font-weight: 600; line-height: 1.3; }
 	.messagehub-form-input, .messagehub-form-select, .messagehub-form-textarea { width: 100%; border: 1px solid #cfcfcf; border-radius: 4px; background: #fff; color: #222; font: inherit; font-size: 13px; line-height: 1.4; padding: 7px 9px; }
 	.messagehub-form-textarea { min-height: 180px; resize: vertical; }
@@ -99,6 +99,14 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 					<option value="1">Enabled</option>
 					<option value="0">Disabled</option>
 				</select>
+			</label>
+			<label class="messagehub-form-row">
+				<span class="messagehub-form-label">Fallback</span>
+				<select id="messagehub-variant-fallback" class="messagehub-form-select">
+					<option value="0">No</option>
+					<option value="1">Use as fallback</option>
+				</select>
+				<span class="messagehub-form-hint">Used when this template has no enabled variant for the requested language.</span>
 			</label>
 		</div>
 		<label class="messagehub-form-row">
@@ -166,6 +174,12 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 		if(row && (row.enabled === 0 || row.enabled === '0' || row.enabled === false)) { return '0'; }
 		if(row && typeof row.enabled_label === 'string' && row.enabled_label.toLowerCase() === 'disabled') { return '0'; }
 		return '1';
+	}
+
+	function rowFallbackValue(row) {
+		if(row && (row.fallback === 1 || row.fallback === '1' || row.fallback === true)) { return '1'; }
+		if(row && typeof row.fallback_label === 'string' && row.fallback_label.toLowerCase() === 'fallback') { return '1'; }
+		return '0';
 	}
 
 	function getDefaultTemplateId() {
@@ -247,7 +261,8 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 			subject: root ? root.querySelector('#messagehub-variant-subject') : null,
 			bodyText: root ? root.querySelector('#messagehub-variant-body-text') : null,
 			bodyHtml: root ? root.querySelector('#messagehub-variant-body-html') : null,
-			enabled: root ? root.querySelector('#messagehub-variant-enabled') : null
+			enabled: root ? root.querySelector('#messagehub-variant-enabled') : null,
+			fallback: root ? root.querySelector('#messagehub-variant-fallback') : null
 		};
 	}
 
@@ -312,6 +327,7 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 		elements.bodyText.value = isExisting ? getText(record.body_text, '') : '';
 		elements.bodyHtml.value = isExisting ? getText(record.body_html, '') : '';
 		elements.enabled.value = isExisting ? rowEnabledValue(record) : '1';
+		elements.fallback.value = isExisting ? rowFallbackValue(record) : '0';
 		editorDialog.open({ source: 'messageVariantEditor', record });
 		window.setTimeout(() => { elements.language.focus(); }, 0);
 		return true;
@@ -330,7 +346,8 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 			subject: elements.subject.value,
 			body_text: elements.bodyText.value,
 			body_html: elements.bodyHtml.value,
-			enabled: elements.enabled.value
+			enabled: elements.enabled.value,
+			fallback: elements.fallback.value
 		};
 		try {
 			const response = await postJson(payload);
@@ -365,6 +382,28 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 				if(event.key === 'Escape') { event.preventDefault(); closeEditor(); }
 			});
 		});
+	}
+
+	function renderLanguage(value, row) {
+		const stack = document.createElement('div');
+		stack.className = 'messagehub-cell-stack';
+
+		const language = document.createElement('div');
+		language.className = 'messagehub-cell-main';
+		language.textContent = getText(row && row.language, '-');
+		stack.appendChild(language);
+
+		if(rowFallbackValue(row) === '1') {
+			const fallback = document.createElement('div');
+			fallback.className = 'messagehub-cell-sub';
+			const pill = document.createElement('span');
+			pill.className = 'messagehub-pill messagehub-pill-fallback';
+			pill.textContent = 'Fallback';
+			fallback.appendChild(pill);
+			stack.appendChild(fallback);
+		}
+
+		return stack;
 	}
 
 	function renderState(value, row) {
@@ -450,7 +489,7 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 		},
 		columns: [
 			{ key: 'type_name', label: 'Template', width: 220 },
-			{ key: 'language', label: 'Language', width: 100 },
+			{ key: 'language', label: 'Language', width: 130, render: renderLanguage },
 			{ key: 'subject', label: 'Subject', width: 360 },
 			{ key: 'body_text_preview', label: 'Body preview', width: 520 },
 			{ key: 'enabled_label', label: 'State', width: 100, render: renderState },

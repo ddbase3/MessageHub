@@ -7,6 +7,7 @@ use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
+use MessageHub\Service\MessageFilterOptionService;
 use MessagingFoundation\Api\IMessageIdGenerator;
 use MessagingFoundation\Api\IMessageTemplateRepository;
 use MessagingFoundation\Dto\MessageTemplate;
@@ -22,7 +23,8 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageTemplateRepository $templateRepository,
-		private readonly IMessageIdGenerator $idGenerator
+		private readonly IMessageIdGenerator $idGenerator,
+		private readonly MessageFilterOptionService $filterOptionService
 	) {}
 
 	public static function getName(): string { return 'messagetemplateadmindisplay'; }
@@ -35,6 +37,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 		$this->view->setTemplate('Display/MessageTemplateAdminDisplay.php');
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
+		$this->view->assign('transport_filter_options', $this->filterOptionService->getTemplateTransportOptions());
 		return $this->view->loadTemplate();
 	}
 

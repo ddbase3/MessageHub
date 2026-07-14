@@ -41,19 +41,65 @@ final class MessageTransportAdminDisplay implements IDisplay {
 		try {
 			$payload = $this->request->getJsonBody();
 			if(!is_array($payload)) { $payload = []; }
+
 			if(($payload['mode'] ?? '') === 'save-transport') {
 				$name = trim((string)($payload['name'] ?? ''));
 				$settings = $payload['settings'] ?? [];
-				if($name === '' || !is_array($settings)) {
+				if(!$this->hasTransport($name) || !is_array($settings)) {
 					return $this->json(['ok' => false, 'error' => 'Invalid transport settings payload.'], $final);
 				}
+
+				$currentSettings = $this->settingsStore->get('messaging_transports', $name, []);
+				unset($settings['enabled']);
+
+				if(array_key_exists('enabled', $currentSettings)) {
+					$settings['enabled'] = $this->readBool($currentSettings['enabled'], false);
+				}
+
 				$this->settingsStore->set('messaging_transports', $name, $settings);
 				$this->settingsStore->save();
 				return $this->json(['ok' => true, 'mode' => 'save-transport'], $final);
 			}
+
+			if(($payload['mode'] ?? '') === 'set-enabled') {
+				$name = trim((string)($payload['name'] ?? ''));
+				if(!$this->hasTransport($name)) {
+					return $this->json(['ok' => false, 'error' => 'Unknown message transport.'], $final);
+				}
+
+				$settings = $this->settingsStore->get('messaging_transports', $name, []);
+				$settings['enabled'] = $this->readBool($payload['enabled'] ?? false, false);
+				$this->settingsStore->set('messaging_transports', $name, $settings);
+				$this->settingsStore->save();
+
+				return $this->json([
+					'ok' => true,
+					'mode' => 'set-enabled',
+					'name' => $name,
+					'enabled' => $settings['enabled']
+				], $final);
+			}
+
+			if(($payload['mode'] ?? '') === 'reset-transport') {
+				$name = trim((string)($payload['name'] ?? ''));
+				if(!$this->hasTransport($name)) {
+					return $this->json(['ok' => false, 'error' => 'Unknown message transport.'], $final);
+				}
+
+				$this->settingsStore->remove('messaging_transports', $name);
+				$this->settingsStore->save();
+
+				return $this->json(['ok' => true, 'mode' => 'reset-transport', 'name' => $name], $final);
+			}
+
 			if(($payload['mode'] ?? '') === 'save-default') {
+				$name = trim((string)($payload['default_transport'] ?? ''));
+				if(!$this->hasTransport($name)) {
+					return $this->json(['ok' => false, 'error' => 'Unknown message transport.'], $final);
+				}
+
 				$settings = $this->settingsStore->get('messaging', 'default', []);
-				$settings['default_transport'] = trim((string)($payload['default_transport'] ?? ''));
+				$settings['default_transport'] = $name;
 				$this->settingsStore->set('messaging', 'default', $settings);
 				$this->settingsStore->save();
 				return $this->json(['ok' => true], $final);
@@ -66,6 +112,10 @@ final class MessageTransportAdminDisplay implements IDisplay {
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);
 		}
+	}
+
+	private function hasTransport(string $name): bool {
+		return $name !== '' && $this->transportRegistry->getTransport($name) !== null;
 	}
 
 	private function loadRows(): array {

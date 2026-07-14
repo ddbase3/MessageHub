@@ -8,6 +8,7 @@ use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
 use MessageHub\Service\MessageDeliveryService;
+use MessageHub\Service\MessageFilterOptionService;
 use MessagingFoundation\Api\IMessageQueueRepository;
 use Throwable;
 
@@ -21,7 +22,8 @@ final class MessageQueueAdminDisplay implements IDisplay {
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageQueueRepository $queueRepository,
-		private readonly MessageDeliveryService $deliveryService
+		private readonly MessageDeliveryService $deliveryService,
+		private readonly MessageFilterOptionService $filterOptionService
 	) {}
 
 	public static function getName(): string { return 'messagequeueadmindisplay'; }
@@ -37,6 +39,8 @@ final class MessageQueueAdminDisplay implements IDisplay {
 		$this->view->setTemplate('Display/MessageQueueAdminDisplay.php');
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
+		$this->view->assign('transport_filter_options', $this->filterOptionService->getQueueTransportOptions());
+		$this->view->assign('type_filter_options', $this->filterOptionService->getQueueTypeOptions());
 		return $this->view->loadTemplate();
 	}
 

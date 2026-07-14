@@ -22,13 +22,17 @@ final class MessageRenderer implements IMessageRenderer {
 			throw new MessageException('Message template not found or disabled: ' . $typeName);
 		}
 
-		$variant = $this->variantRepository->getForTemplate($template->getId(), $language);
+		$requestedLanguage = trim($language);
+		$variant = $this->variantRepository->getForTemplate($template->getId(), $requestedLanguage);
+		$fallbackUsed = false;
+
 		if($variant === null) {
-			$variant = $this->variantRepository->getForTemplate($template->getId(), 'en');
+			$variant = $this->variantRepository->getFallbackForTemplate($template->getId());
+			$fallbackUsed = $variant !== null;
 		}
 
 		if($variant === null || !$variant->isEnabled()) {
-			throw new MessageException('Message variant not found or disabled for template: ' . $typeName);
+			throw new MessageException('Message variant and fallback variant not found or disabled for template: ' . $typeName);
 		}
 
 		$subject = $this->replacePlaceholders($variant->getSubject(), $context);
@@ -38,7 +42,9 @@ final class MessageRenderer implements IMessageRenderer {
 		return new Message($typeName, $subject, $bodyText, $bodyHtml, [], [], '', '', '', '', [
 			'template_id' => $template->getId(),
 			'variant_id' => $variant->getId(),
-			'language' => $language,
+			'language' => $variant->getLanguage(),
+			'requested_language' => $requestedLanguage,
+			'fallback_used' => $fallbackUsed,
 			'transport_name' => $transportName !== '' ? $transportName : $template->getDefaultTransport()
 		]);
 	}

@@ -200,11 +200,16 @@ $serviceUrl = (string) $this->_['service'];
 	}
 
 	function renderEnabled(value, row) {
-		const pill = document.createElement('span');
+		const container = document.createElement('span');
 		const isEnabled = String(row && row.is_enabled ? row.is_enabled : '0') === '1';
-		pill.className = 'messagehub-pill ' + (isEnabled ? 'messagehub-pill-enabled' : 'messagehub-pill-disabled');
-		pill.textContent = isEnabled ? 'Enabled' : 'Disabled';
-		return pill;
+
+		if(!isEnabled) {
+			return container;
+		}
+
+		container.className = 'messagehub-pill messagehub-pill-enabled';
+		container.textContent = 'Enabled';
+		return container;
 	}
 
 	function renderDefault(value, row) {
@@ -404,10 +409,10 @@ $serviceUrl = (string) $this->_['service'];
 		const schema = parseJsonObject(row && row.schema_json, {});
 		const settings = parseJsonObject(row && row.settings_json, {});
 		const properties = schema && schema.properties && typeof schema.properties === 'object' ? schema.properties : {};
-		let keys = Object.keys(properties);
+		let keys = Object.keys(properties).filter((key) => key !== 'enabled');
 
 		if(keys.length === 0) {
-			keys = Object.keys(settings);
+			keys = Object.keys(settings).filter((key) => key !== 'enabled');
 		}
 
 		elements.fields.replaceChildren();
@@ -616,7 +621,22 @@ $serviceUrl = (string) $this->_['service'];
 			infiniteScroll: { threshold: 180, pageSize: BATCH_SIZE, containerSelector: '.mg-table-scroll' },
 			rowActions: { items: [
 				{ key: 'default', label: 'Set as default', async onClick(context) { await postJson({ mode: 'save-default', default_transport: context.row.name }); await refreshGrid(); log('Default transport set to ' + context.row.name + '.'); } },
-				{ key: 'settings', label: 'Edit settings', onClick(context) { openSettingsEditor(context.row); } }
+				{ key: 'toggle-enabled', label: 'Toggle enabled', async onClick(context) {
+					const enabled = String(context.row && context.row.is_enabled ? context.row.is_enabled : '0') !== '1';
+					await postJson({ mode: 'set-enabled', name: context.row.name, enabled });
+					await refreshGrid();
+					log((enabled ? 'Enabled ' : 'Disabled ') + context.row.name + '.');
+				} },
+				{ key: 'settings', label: 'Edit settings', onClick(context) { openSettingsEditor(context.row); } },
+				{ key: 'reset-settings', label: 'Reset settings', async onClick(context) {
+					if(!window.confirm('Reset all stored settings for ' + context.row.name + '?')) {
+						return;
+					}
+
+					await postJson({ mode: 'reset-transport', name: context.row.name });
+					await refreshGrid();
+					log('Reset transport settings for ' + context.row.name + '.');
+				} }
 			] }
 		},
 		columns: [

@@ -5,6 +5,7 @@ $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/ind
 $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/styles/modulardialog.css');
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
+$transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null) ? $this->_['transport_filter_options'] : [];
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -117,6 +118,7 @@ $serviceUrl = (string) $this->_['service'];
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
+	const TRANSPORT_FILTER_OPTIONS = [{ value: '', label: 'All transports' }, ...<?php echo json_encode($transportFilterOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>];
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let editorDialog = null;
@@ -409,7 +411,7 @@ $serviceUrl = (string) $this->_['service'];
 			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
 				{ key: 'type_name', label: 'Type', type: 'text', placeholder: 'Type', width: 220 },
 				{ key: 'label', label: 'Label', type: 'text', placeholder: 'Label', width: 220 },
-				{ key: 'default_transport', label: 'Transport', type: 'text', placeholder: 'Transport', width: 160 },
+				{ key: 'default_transport_exact', label: 'Transport', type: 'select', options: TRANSPORT_FILTER_OPTIONS },
 				{ key: 'enabled', label: 'State', type: 'select', options: [{ value: '', label: 'All states' }, { value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] }
 			] },
 			reset: { zone: 'topLine1', order: 30, label: 'Reset', sections: ['query', 'filters', 'columns'] },

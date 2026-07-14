@@ -55,7 +55,24 @@ final class MessageVariantAdminDisplay implements IDisplay {
 			if($mode === 'save') {
 				$id = trim((string)($payload['id'] ?? ''));
 				if($id === '') { $id = $this->idGenerator->createId('var'); }
-				$variant = new MessageVariant($id, trim((string)$payload['template_id']), trim((string)($payload['language'] ?? $this->getSelectedLanguage($this->getLanguageOptions()))), trim((string)$payload['subject']), (string)($payload['body_text'] ?? ''), (string)($payload['body_html'] ?? ''), (string)($payload['enabled'] ?? '1') === '1');
+
+				$enabled = (string)($payload['enabled'] ?? '1') === '1';
+				$fallback = (string)($payload['fallback'] ?? '0') === '1';
+
+				if($fallback && !$enabled) {
+					return $this->json(['ok' => false, 'error' => 'A fallback variant must be enabled.'], $final);
+				}
+
+				$variant = new MessageVariant(
+					$id,
+					trim((string)$payload['template_id']),
+					trim((string)($payload['language'] ?? $this->getSelectedLanguage($this->getLanguageOptions()))),
+					trim((string)$payload['subject']),
+					(string)($payload['body_text'] ?? ''),
+					(string)($payload['body_html'] ?? ''),
+					$enabled,
+					$fallback
+				);
 				$this->variantRepository->save($variant);
 				return $this->json(['ok' => true, 'mode' => 'save', 'id' => $id], $final);
 			}

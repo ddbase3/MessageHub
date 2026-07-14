@@ -176,10 +176,14 @@ trait AdminDisplayTrait {
 	}
 
 	private function isExactListFilter(string $key): bool {
-		return in_array($key, ['status', 'enabled', 'installed', 'is_default', 'template_id'], true);
+		return in_array($key, ['status', 'enabled', 'installed', 'is_default', 'template_id', 'default_transport_exact', 'transport_name_exact', 'type_name_exact'], true);
 	}
 
 	private function readListFilterValue(array $row, string $key): string {
+		if(str_ends_with($key, '_exact')) {
+			$key = substr($key, 0, -6);
+		}
+
 		if(array_key_exists($key, $row)) {
 			return $this->stringifyListValue($row[$key]);
 		}
