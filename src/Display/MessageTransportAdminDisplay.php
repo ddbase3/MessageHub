@@ -71,16 +71,53 @@ final class MessageTransportAdminDisplay implements IDisplay {
 	private function loadRows(): array {
 		$rows = [];
 		foreach($this->transportRegistry->getTransports() as $name => $transport) {
+			$settings = $this->transportRegistry->getTransportSettings($name);
+			$schema = $transport->getSchema();
 			$rows[] = [
 				'name' => $name,
 				'label' => $transport->getLabel(),
+				'is_enabled' => $this->isTransportEnabled($settings, $schema) ? 1 : 0,
 				'is_default' => $name === $this->transportRegistry->getDefaultTransportName() ? 1 : 0,
-				'schema_json' => json_encode($transport->getSchema(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
-				'settings_json' => json_encode($this->transportRegistry->getTransportSettings($name), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+				'settings_summary' => $transport->getSettingsSummary($settings),
+				'schema_json' => json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+				'settings_json' => json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
 			];
 		}
 
 		return $rows;
+	}
+
+	private function isTransportEnabled(array $settings, array $schema): bool {
+		if(array_key_exists('enabled', $settings)) {
+			return $this->readBool($settings['enabled'], false);
+		}
+
+		$properties = isset($schema['properties']) && is_array($schema['properties']) ? $schema['properties'] : [];
+		$enabled = isset($properties['enabled']) && is_array($properties['enabled']) ? $properties['enabled'] : [];
+
+		if(array_key_exists('default', $enabled)) {
+			return $this->readBool($enabled['default'], false);
+		}
+
+		return $properties === [];
+	}
+
+	private function readBool(mixed $value, bool $default): bool {
+		if(is_bool($value)) {
+			return $value;
+		}
+
+		if(is_scalar($value)) {
+			$normalized = strtolower(trim((string)$value));
+			if(in_array($normalized, ['1', 'true', 'yes', 'on', 'enabled'], true)) {
+				return true;
+			}
+			if(in_array($normalized, ['0', 'false', 'no', 'off', 'disabled', ''], true)) {
+				return false;
+			}
+		}
+
+		return $default;
 	}
 
 	private function filterRows(array $rows, array $request): array {
@@ -89,12 +126,15 @@ final class MessageTransportAdminDisplay implements IDisplay {
 
 		return array_values(array_filter($rows, function(array $row) use ($search, $filters): bool {
 			if($search !== '') {
-				$haystack = strtolower(implode(' ', [(string)($row['name'] ?? ''), (string)($row['label'] ?? ''), (string)($row['settings_json'] ?? ''), (string)($row['schema_json'] ?? '')]));
+				$haystack = strtolower(implode(' ', [(string)($row['name'] ?? ''), (string)($row['label'] ?? ''), (string)($row['settings_summary'] ?? ''), (string)($row['settings_json'] ?? ''), (string)($row['schema_json'] ?? '')]));
 				if(strpos($haystack, $search) === false) { return false; }
 			}
 
 			$name = isset($filters['name']) && is_scalar($filters['name']) ? strtolower(trim((string)$filters['name'])) : '';
 			if($name !== '' && strpos(strtolower((string)($row['name'] ?? '')), $name) === false) { return false; }
+
+			$enabled = isset($filters['is_enabled']) && is_scalar($filters['is_enabled']) ? trim((string)$filters['is_enabled']) : '';
+			if($enabled !== '' && (string)(int)($row['is_enabled'] ?? 0) !== $enabled) { return false; }
 
 			$default = isset($filters['is_default']) && is_scalar($filters['is_default']) ? trim((string)$filters['is_default']) : '';
 			if($default !== '' && (string)(int)($row['is_default'] ?? 0) !== $default) { return false; }

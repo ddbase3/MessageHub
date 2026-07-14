@@ -6,6 +6,8 @@ $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialo
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
 $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['templateOptions'] : [];
+$languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
+$selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -84,7 +86,12 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
 				<span class="messagehub-form-label">Language</span>
-				<input type="text" id="messagehub-variant-language" class="messagehub-form-input" maxlength="12" autocomplete="off" />
+				<select id="messagehub-variant-language" class="messagehub-form-select">
+					<?php foreach($languageOptions as $option): ?>
+						<?php $value = (string) ($option['value'] ?? ''); ?>
+						<option value="<?php echo htmlspecialchars($value, ENT_QUOTES); ?>"<?php echo $value === $selectedLanguage ? ' selected' : ''; ?>><?php echo htmlspecialchars((string) ($option['label'] ?? $value), ENT_QUOTES); ?></option>
+					<?php endforeach; ?>
+				</select>
 			</label>
 			<label class="messagehub-form-row">
 				<span class="messagehub-form-label">Enabled</span>
@@ -112,6 +119,8 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 
 <script type="module">
 	const TEMPLATE_OPTIONS = <?php echo json_encode($templateOptions, JSON_UNESCAPED_SLASHES); ?>;
+	const LANGUAGE_OPTIONS = <?php echo json_encode($languageOptions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+	const SELECTED_LANGUAGE = <?php echo json_encode($selectedLanguage, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
@@ -161,6 +170,16 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 
 	function getDefaultTemplateId() {
 		return TEMPLATE_OPTIONS.length > 0 ? String(TEMPLATE_OPTIONS[0].value || '') : '';
+	}
+
+	function ensureLanguageOption(select, value) {
+		if(!select || value === '') { return; }
+		const exists = Array.from(select.options).some((option) => option.value === value);
+		if(exists) { return; }
+		const option = document.createElement('option');
+		option.value = value;
+		option.textContent = value + ' (not available)';
+		select.appendChild(option);
 	}
 
 	async function postJson(payload) {
@@ -286,7 +305,9 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 		editorDialog.execute('setButtons', buildEditorButtons(isExisting));
 		elements.id.value = isExisting ? getText(record.id, '') : '';
 		elements.templateId.value = templateId;
-		elements.language.value = isExisting ? getText(record.language, 'en') : 'en';
+		const language = isExisting ? getText(record.language, SELECTED_LANGUAGE) : SELECTED_LANGUAGE;
+		ensureLanguageOption(elements.language, language);
+		elements.language.value = language;
 		elements.subject.value = isExisting ? getText(record.subject, '') : '';
 		elements.bodyText.value = isExisting ? getText(record.body_text, '') : '';
 		elements.bodyHtml.value = isExisting ? getText(record.body_html, '') : '';
@@ -305,7 +326,7 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 			mode: 'save',
 			id: elements.id.value,
 			template_id: elements.templateId.value,
-			language: elements.language.value || 'en',
+			language: elements.language.value || SELECTED_LANGUAGE,
 			subject: elements.subject.value,
 			body_text: elements.bodyText.value,
 			body_html: elements.bodyHtml.value,
@@ -371,6 +392,7 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 	}
 
 	const templateFilterOptions = [{ value: '', label: 'All templates' }, ...TEMPLATE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
+	const languageFilterOptions = [{ value: '', label: 'All languages' }, ...LANGUAGE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
 	const modularGridModule = await import(new URL(MODULAR_GRID_URL, document.baseURI).href);
 	let editorInitializationError = '';
 	try {
@@ -409,7 +431,7 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search type, language, subject or body' },
 			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
 				{ key: 'template_id', label: 'Template', type: 'select', options: templateFilterOptions },
-				{ key: 'language', label: 'Language', type: 'text', placeholder: 'Language', width: 120 },
+				{ key: 'language', label: 'Language', type: 'select', options: languageFilterOptions },
 				{ key: 'subject', label: 'Subject', type: 'text', placeholder: 'Subject', width: 240 },
 				{ key: 'enabled', label: 'State', type: 'select', options: [{ value: '', label: 'All states' }, { value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] }
 			] },

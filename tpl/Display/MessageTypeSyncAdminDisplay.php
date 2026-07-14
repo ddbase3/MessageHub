@@ -4,6 +4,8 @@ $resolve = $this->_['resolve'];
 $modularGridCssUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/styles/modulargrid.css');
 $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/index.js');
 $serviceUrl = (string) $this->_['service'];
+$languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
+$selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <style>
@@ -56,10 +58,12 @@ $serviceUrl = (string) $this->_['service'];
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const INITIAL_PROVIDERS = <?php echo json_encode(array_values($providers), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+	const LANGUAGE_OPTIONS = <?php echo json_encode(array_values($languageOptions), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+	const SELECTED_LANGUAGE = <?php echo json_encode($selectedLanguage, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let currentProviders = Array.isArray(INITIAL_PROVIDERS) ? INITIAL_PROVIDERS : [];
-	let languageValue = 'en';
+	let languageValue = SELECTED_LANGUAGE;
 
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') {
@@ -170,13 +174,13 @@ $serviceUrl = (string) $this->_['service'];
 	}
 
 	async function syncAll() {
-		const data = await postJson({ mode: 'sync-all', language: languageValue || 'en' });
+		const data = await postJson({ mode: 'sync-all', language: languageValue || SELECTED_LANGUAGE });
 		show(data);
 		await reloadProviders();
 	}
 
 	async function syncOne(typeName) {
-		const data = await postJson({ mode: 'sync-one', type_name: typeName, language: languageValue || 'en' });
+		const data = await postJson({ mode: 'sync-one', type_name: typeName, language: languageValue || SELECTED_LANGUAGE });
 		show(data);
 		await reloadProviders();
 	}
@@ -205,13 +209,16 @@ $serviceUrl = (string) $this->_['service'];
 						const languageLabel = document.createElement('span');
 						languageLabel.className = 'mg-label';
 						languageLabel.textContent = 'Language';
-						const languageInput = document.createElement('input');
-						languageInput.type = 'text';
-						languageInput.className = 'mg-input';
-						languageInput.maxLength = 12;
+						const languageInput = document.createElement('select');
+						languageInput.className = 'mg-select';
+						LANGUAGE_OPTIONS.forEach((languageOption) => {
+							const option = document.createElement('option');
+							option.value = String(languageOption.value || '');
+							option.textContent = String(languageOption.label || languageOption.value || '');
+							languageInput.appendChild(option);
+						});
 						languageInput.value = languageValue;
-						languageInput.style.width = '80px';
-						languageInput.addEventListener('input', () => { languageValue = languageInput.value || 'en'; });
+						languageInput.addEventListener('change', () => { languageValue = languageInput.value || SELECTED_LANGUAGE; });
 						languageGroup.appendChild(languageLabel);
 						languageGroup.appendChild(languageInput);
 

@@ -2,27 +2,26 @@
 
 namespace MessageHub\Transport;
 
-use Base3\Logger\Api\ILogger;
 use MessagingFoundation\Api\IMessageTransport;
 use MessagingFoundation\Dto\Message;
 use MessagingFoundation\Dto\MessageDeliveryResult;
 
-final class LogMessageTransport implements IMessageTransport {
-
-	public function __construct(
-		private readonly ILogger $logger
-	) {}
+final class NullMessageTransport implements IMessageTransport {
 
 	public static function getName(): string {
-		return 'log';
+		return 'null';
 	}
 
 	public function getLabel(): string {
-		return 'Log only';
+		return 'Null (discard)';
 	}
 
 	public function getSettingsSummary(array $settings = []): string {
-		return 'No delivery settings required.';
+		$reason = $this->readString($settings, 'reason', '');
+
+		return $reason !== ''
+			? 'Messages are discarded successfully | Reason: ' . $reason
+			: 'Messages are discarded successfully.';
 	}
 
 	public function supports(Message $message, array $settings = []): bool {
@@ -31,17 +30,13 @@ final class LogMessageTransport implements IMessageTransport {
 
 	public function send(Message $message, array $settings = []): MessageDeliveryResult {
 		if(!$this->readBool($settings, 'enabled', true)) {
-			return new MessageDeliveryResult(false, 'Log transport is disabled.');
+			return new MessageDeliveryResult(false, 'Null transport is disabled.');
 		}
 
-		$this->logger->info('MessageHub log transport received message', [
-			'scope' => 'messagehub',
-			'type_name' => $message->getTypeName(),
-			'subject' => $message->getSubject()
-		]);
-
-		return new MessageDeliveryResult(true, 'Message logged.', '', [
-			'transport' => self::getName()
+		return new MessageDeliveryResult(true, 'Message discarded by Null transport.', '', [
+			'transport' => self::getName(),
+			'discarded' => true,
+			'reason' => $this->readString($settings, 'reason', '')
 		]);
 	}
 
@@ -49,9 +44,16 @@ final class LogMessageTransport implements IMessageTransport {
 		return [
 			'type' => 'object',
 			'properties' => [
-				'enabled' => ['type' => 'boolean', 'default' => true]
+				'enabled' => ['type' => 'boolean', 'default' => true],
+				'reason' => ['type' => 'string']
 			]
 		];
+	}
+
+	private function readString(array $settings, string $key, string $default = ''): string {
+		$value = $settings[$key] ?? $default;
+
+		return is_scalar($value) || $value === null ? trim((string)$value) : $default;
 	}
 
 	private function readBool(array $settings, string $key, bool $default): bool {

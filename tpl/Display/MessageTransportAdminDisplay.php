@@ -39,6 +39,7 @@ $serviceUrl = (string) $this->_['service'];
 	.messagehub-cell-main { font-weight: 600; color: #222; min-width: 0; overflow-wrap: anywhere; }
 	.messagehub-cell-sub { font-size: 12px; color: #666; min-width: 0; overflow-wrap: anywhere; }
 	.messagehub-value { margin: 0; max-height: 120px; overflow: auto; color: #333; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+	.messagehub-settings-summary { margin: 0; color: #333; font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 	.messagehub-pill { display: inline-flex; align-items: center; padding: 1px 6px; border: 1px solid #d6d6d6; border-radius: 999px; background: #fafafa; font-size: 11px; line-height: 1.35; color: #444; white-space: nowrap; }
 	.messagehub-pill-sent, .messagehub-pill-enabled { background: #eef7ee; border-color: #bddfbd; color: #226622; }
 	.messagehub-pill-failed, .messagehub-pill-disabled { background: #fff0f0; border-color: #e4b9b9; color: #8a1f1f; }
@@ -198,12 +199,27 @@ $serviceUrl = (string) $this->_['service'];
 		}
 	}
 
+	function renderEnabled(value, row) {
+		const pill = document.createElement('span');
+		const isEnabled = String(row && row.is_enabled ? row.is_enabled : '0') === '1';
+		pill.className = 'messagehub-pill ' + (isEnabled ? 'messagehub-pill-enabled' : 'messagehub-pill-disabled');
+		pill.textContent = isEnabled ? 'Enabled' : 'Disabled';
+		return pill;
+	}
+
 	function renderDefault(value, row) {
 		const pill = document.createElement('span');
 		const isDefault = String(row && row.is_default ? row.is_default : '0') === '1';
 		pill.className = 'messagehub-pill ' + (isDefault ? 'messagehub-pill-enabled' : '');
 		pill.textContent = isDefault ? 'Default' : 'No';
 		return pill;
+	}
+
+	function renderSettingsSummary(value) {
+		const text = document.createElement('div');
+		text.className = 'messagehub-settings-summary';
+		text.textContent = getText(value);
+		return text;
 	}
 
 	function renderPre(value) {
@@ -405,7 +421,11 @@ $serviceUrl = (string) $this->_['service'];
 		}
 
 		keys.forEach((key) => {
-			elements.fields.appendChild(createFieldControl(key, properties[key] || {}, settings[key]));
+			const definition = properties[key] || {};
+			const hasStoredValue = Object.prototype.hasOwnProperty.call(settings, key);
+			const hasDefaultValue = Object.prototype.hasOwnProperty.call(definition, 'default');
+			const value = hasStoredValue ? settings[key] : (hasDefaultValue ? definition.default : undefined);
+			elements.fields.appendChild(createFieldControl(key, definition, value));
 		});
 	}
 
@@ -584,9 +604,10 @@ $serviceUrl = (string) $this->_['service'];
 		pageSize: BATCH_SIZE,
 		plugins: [SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin, InfiniteScrollPlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search name, label or settings' },
+			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search name, label or configuration' },
 			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
 				{ key: 'name', label: 'Name', type: 'text', placeholder: 'Name', width: 180 },
+				{ key: 'is_enabled', label: 'Enabled', type: 'select', options: [{ value: '', label: 'All' }, { value: '1', label: 'Enabled only' }, { value: '0', label: 'Disabled only' }] },
 				{ key: 'is_default', label: 'Default', type: 'select', options: [{ value: '', label: 'All' }, { value: '1', label: 'Default only' }, { value: '0', label: 'Not default' }] }
 			] },
 			reset: { zone: 'topLine1', order: 20, label: 'Reset', sections: ['query', 'filters', 'columns'] },
@@ -601,8 +622,9 @@ $serviceUrl = (string) $this->_['service'];
 		columns: [
 			{ key: 'name', label: 'Name', width: 180 },
 			{ key: 'label', label: 'Label', width: 260 },
+			{ key: 'is_enabled', label: 'Enabled', width: 110, render: renderEnabled },
 			{ key: 'is_default', label: 'Default', width: 100, render: renderDefault },
-			{ key: 'settings_json', label: 'Settings', width: 520, render: renderPre },
+			{ key: 'settings_summary', label: 'Configuration', width: 520, render: renderSettingsSummary },
 			{ key: 'schema_json', label: 'Schema', width: 520, visible: false, render: renderPre }
 		]
 	});

@@ -6,6 +6,7 @@ use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
+use Base3\Language\Api\ILanguage;
 use Base3\LinkTarget\Api\ILinkTargetService;
 use MessagingFoundation\Api\IMessageTypeSynchronizationService;
 use Throwable;
@@ -17,7 +18,8 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 		private readonly IMvcView $view,
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
-		private readonly IMessageTypeSynchronizationService $messageTypeSynchronizationService
+		private readonly IMessageTypeSynchronizationService $messageTypeSynchronizationService,
+		private readonly ILanguage $language
 	) {}
 
 	public static function getName(): string {
@@ -43,6 +45,8 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 	}
 
 	private function handleHtml(): string {
+		$languageOptions = $this->getLanguageOptions();
+
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->setTemplate('Display/MessageTypeSyncAdminDisplay.php');
 		$this->view->assign(
@@ -56,6 +60,8 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 		);
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string) $src));
 		$this->view->assign('providers', $this->messageTypeSynchronizationService->getProviderSummaries());
+		$this->view->assign('languageOptions', $languageOptions);
+		$this->view->assign('selectedLanguage', $this->getSelectedLanguage($languageOptions));
 
 		return $this->view->loadTemplate();
 	}
@@ -92,7 +98,7 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 		}
 
 		$mode = (string) ($payload['mode'] ?? 'providers');
-		$language = (string) ($payload['language'] ?? 'en');
+		$language = $this->normalizeLanguage((string) ($payload['language'] ?? $this->language->getLanguage()));
 
 		if($mode === 'sync-all') {
 			return $this->messageTypeSynchronizationService->syncAll($language);
@@ -107,5 +113,64 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 			'mode' => 'providers',
 			'providers' => $this->messageTypeSynchronizationService->getProviderSummaries()
 		];
+	}
+
+	/**
+	 * @return array<int,array{value:string,label:string}>
+	 */
+	private function getLanguageOptions(): array {
+		$options = [];
+		$currentLanguage = trim($this->language->getLanguage());
+
+		foreach($this->language->getLanguages() as $language) {
+			$language = trim((string) $language);
+			if($language === '' || isset($options[$language])) {
+				continue;
+			}
+
+			$options[$language] = [
+				'value' => $language,
+				'label' => $language
+			];
+		}
+
+		if($currentLanguage !== '' && !isset($options[$currentLanguage])) {
+			$options = [
+				$currentLanguage => [
+					'value' => $currentLanguage,
+					'label' => $currentLanguage
+				]
+			] + $options;
+		}
+
+		return array_values($options);
+	}
+
+	/**
+	 * @param array<int,array{value:string,label:string}> $options
+	 */
+	private function getSelectedLanguage(array $options): string {
+		$currentLanguage = trim($this->language->getLanguage());
+
+		foreach($options as $option) {
+			if((string) ($option['value'] ?? '') === $currentLanguage) {
+				return $currentLanguage;
+			}
+		}
+
+		return isset($options[0]['value']) ? (string) $options[0]['value'] : 'en';
+	}
+
+	private function normalizeLanguage(string $language): string {
+		$language = trim($language);
+		$options = $this->getLanguageOptions();
+
+		foreach($options as $option) {
+			if((string) ($option['value'] ?? '') === $language) {
+				return $language;
+			}
+		}
+
+		return $this->getSelectedLanguage($options);
 	}
 }

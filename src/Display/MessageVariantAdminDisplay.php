@@ -6,6 +6,7 @@ use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
+use Base3\Language\Api\ILanguage;
 use Base3\LinkTarget\Api\ILinkTargetService;
 use MessagingFoundation\Api\IMessageIdGenerator;
 use MessagingFoundation\Api\IMessageTemplateRepository;
@@ -24,7 +25,8 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageVariantRepository $variantRepository,
 		private readonly IMessageTemplateRepository $templateRepository,
-		private readonly IMessageIdGenerator $idGenerator
+		private readonly IMessageIdGenerator $idGenerator,
+		private readonly ILanguage $language
 	) {}
 
 	public static function getName(): string { return 'messagevariantadmindisplay'; }
@@ -33,11 +35,15 @@ final class MessageVariantAdminDisplay implements IDisplay {
 	public function getOutput(string $out = 'html', bool $final = false): string { return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
 
 	private function handleHtml(): string {
+		$languageOptions = $this->getLanguageOptions();
+
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->setTemplate('Display/MessageVariantAdminDisplay.php');
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
 		$this->view->assign('templateOptions', array_map(fn($tpl) => ['value' => $tpl->getId(), 'label' => $tpl->getTypeName() . ' - ' . $tpl->getLabel()], $this->templateRepository->listAll()));
+		$this->view->assign('languageOptions', $languageOptions);
+		$this->view->assign('selectedLanguage', $this->getSelectedLanguage($languageOptions));
 		return $this->view->loadTemplate();
 	}
 
@@ -49,7 +55,7 @@ final class MessageVariantAdminDisplay implements IDisplay {
 			if($mode === 'save') {
 				$id = trim((string)($payload['id'] ?? ''));
 				if($id === '') { $id = $this->idGenerator->createId('var'); }
-				$variant = new MessageVariant($id, trim((string)$payload['template_id']), trim((string)($payload['language'] ?? 'en')), trim((string)$payload['subject']), (string)($payload['body_text'] ?? ''), (string)($payload['body_html'] ?? ''), (string)($payload['enabled'] ?? '1') === '1');
+				$variant = new MessageVariant($id, trim((string)$payload['template_id']), trim((string)($payload['language'] ?? $this->getSelectedLanguage($this->getLanguageOptions()))), trim((string)$payload['subject']), (string)($payload['body_text'] ?? ''), (string)($payload['body_html'] ?? ''), (string)($payload['enabled'] ?? '1') === '1');
 				$this->variantRepository->save($variant);
 				return $this->json(['ok' => true, 'mode' => 'save', 'id' => $id], $final);
 			}
@@ -63,5 +69,51 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);
 		}
+	}
+
+	/**
+	 * @return array<int,array{value:string,label:string}>
+	 */
+	private function getLanguageOptions(): array {
+		$options = [];
+		$currentLanguage = trim($this->language->getLanguage());
+
+		foreach($this->language->getLanguages() as $language) {
+			$language = trim((string)$language);
+			if($language === '' || isset($options[$language])) {
+				continue;
+			}
+
+			$options[$language] = [
+				'value' => $language,
+				'label' => $language
+			];
+		}
+
+		if($currentLanguage !== '' && !isset($options[$currentLanguage])) {
+			$options = [
+				$currentLanguage => [
+					'value' => $currentLanguage,
+					'label' => $currentLanguage
+				]
+			] + $options;
+		}
+
+		return array_values($options);
+	}
+
+	/**
+	 * @param array<int,array{value:string,label:string}> $options
+	 */
+	private function getSelectedLanguage(array $options): string {
+		$currentLanguage = trim($this->language->getLanguage());
+
+		foreach($options as $option) {
+			if((string)($option['value'] ?? '') === $currentLanguage) {
+				return $currentLanguage;
+			}
+		}
+
+		return isset($options[0]['value']) ? (string)$options[0]['value'] : 'en';
 	}
 }
