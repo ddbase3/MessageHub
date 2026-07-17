@@ -13,6 +13,7 @@ use MessagingFoundation\Api\IMessageTemplateRepository;
 use MessagingFoundation\Api\IMessageVariantRepository;
 use MessagingFoundation\Dto\MessageVariant;
 use Throwable;
+use UiFoundation\Api\IRichTextEditorDisplay;
 
 final class MessageVariantAdminDisplay implements IDisplay {
 
@@ -26,6 +27,7 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		private readonly IMessageVariantRepository $variantRepository,
 		private readonly IMessageTemplateRepository $templateRepository,
 		private readonly IMessageIdGenerator $idGenerator,
+		private readonly IRichTextEditorDisplay $richTextEditorDisplay,
 		private readonly ILanguage $language
 	) {}
 
@@ -36,6 +38,7 @@ final class MessageVariantAdminDisplay implements IDisplay {
 
 	private function handleHtml(): string {
 		$languageOptions = $this->getLanguageOptions();
+		$bodyHtmlEditor = $this->renderBodyHtmlEditor();
 
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->setTemplate('Display/MessageVariantAdminDisplay.php');
@@ -44,7 +47,22 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		$this->view->assign('templateOptions', array_map(fn($tpl) => ['value' => $tpl->getId(), 'label' => $tpl->getTypeName() . ' - ' . $tpl->getLabel()], $this->templateRepository->listAll()));
 		$this->view->assign('languageOptions', $languageOptions);
 		$this->view->assign('selectedLanguage', $this->getSelectedLanguage($languageOptions));
+		$this->view->assign('bodyHtmlEditor', $bodyHtmlEditor);
 		return $this->view->loadTemplate();
+	}
+
+	private function renderBodyHtmlEditor(): string {
+		$this->richTextEditorDisplay->setData([
+			'id' => 'messagehub-variant-body-html',
+			'name' => 'body_html',
+			'value' => '',
+			'class' => 'messagehub-form-textarea messagehub-form-textarea-monospace',
+			'rows' => 16,
+			'spellcheck' => false,
+			'aria_label' => 'HTML body'
+		]);
+
+		return $this->richTextEditorDisplay->getOutput('html', false);
 	}
 
 	private function handleJson(bool $final): string {

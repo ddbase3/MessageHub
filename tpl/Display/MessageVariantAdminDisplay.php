@@ -8,6 +8,7 @@ $serviceUrl = (string) $this->_['service'];
 $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['templateOptions'] : [];
 $languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
 $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
+$bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -71,7 +72,7 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 	</div>
 </div>
 
-<template id="messagehub-variant-editor-template">
+<div id="messagehub-variant-editor-template" hidden>
 	<div id="messagehub-variant-editor" class="messagehub-editor">
 		<div id="messagehub-variant-error" class="messagehub-error"></div>
 		<input type="hidden" id="messagehub-variant-id" />
@@ -106,7 +107,6 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 					<option value="0">No</option>
 					<option value="1">Use as fallback</option>
 				</select>
-				<span class="messagehub-form-hint">Used when this template has no enabled variant for the requested language.</span>
 			</label>
 		</div>
 		<label class="messagehub-form-row">
@@ -117,13 +117,13 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 			<span class="messagehub-form-label">Plain text body</span>
 			<textarea id="messagehub-variant-body-text" class="messagehub-form-textarea messagehub-form-textarea-monospace" spellcheck="false"></textarea>
 		</label>
-		<label class="messagehub-form-row">
+		<div class="messagehub-form-row">
 			<span class="messagehub-form-label">HTML body</span>
-			<textarea id="messagehub-variant-body-html" class="messagehub-form-textarea messagehub-form-textarea-monospace" spellcheck="false"></textarea>
+			<?php echo $bodyHtmlEditor; ?>
 			<span class="messagehub-form-hint">HTML is optional. Leave it empty when only plain text should be stored.</span>
-		</label>
+		</div>
 	</div>
-</template>
+</div>
 
 <script type="module">
 	const TEMPLATE_OPTIONS = <?php echo json_encode($templateOptions, JSON_UNESCAPED_SLASHES); ?>;
@@ -141,6 +141,39 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') { return placeholder; }
 		return String(value);
+	}
+
+	function getRichTextEditorApi(element) {
+		if(!element || !element.base3RichTextEditor || typeof element.base3RichTextEditor !== 'object') {
+			return null;
+		}
+
+		return element.base3RichTextEditor;
+	}
+
+	function setRichTextEditorValue(element, value) {
+		const text = value === null || value === undefined ? '' : String(value);
+		const api = getRichTextEditorApi(element);
+
+		if(api && typeof api.setValue === 'function') {
+			api.setValue(text);
+			return;
+		}
+
+		if(element) {
+			element.value = text;
+		}
+	}
+
+	function getRichTextEditorValue(element) {
+		const api = getRichTextEditorApi(element);
+
+		if(api && typeof api.getValue === 'function') {
+			const value = api.getValue();
+			return value === null || value === undefined ? '' : String(value);
+		}
+
+		return element ? String(element.value || '') : '';
 	}
 
 	function log(message) {
@@ -242,10 +275,10 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 	function createEditorContent() {
 		if(editorContent) { return editorContent; }
 		const template = document.querySelector('#messagehub-variant-editor-template');
-		if(!template || !template.content) { throw new Error('Message variant editor template not found.'); }
-		const fragment = template.content.cloneNode(true);
-		const content = fragment.querySelector('#messagehub-variant-editor');
+		if(!template) { throw new Error('Message variant editor template not found.'); }
+		const content = template.querySelector('#messagehub-variant-editor');
 		if(!content) { throw new Error('Message variant editor content not found.'); }
+		content.remove();
 		editorContent = content;
 		return editorContent;
 	}
@@ -325,7 +358,7 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 		elements.language.value = language;
 		elements.subject.value = isExisting ? getText(record.subject, '') : '';
 		elements.bodyText.value = isExisting ? getText(record.body_text, '') : '';
-		elements.bodyHtml.value = isExisting ? getText(record.body_html, '') : '';
+		setRichTextEditorValue(elements.bodyHtml, isExisting ? getText(record.body_html, '') : '');
 		elements.enabled.value = isExisting ? rowEnabledValue(record) : '1';
 		elements.fallback.value = isExisting ? rowFallbackValue(record) : '0';
 		editorDialog.open({ source: 'messageVariantEditor', record });
@@ -345,7 +378,7 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 			language: elements.language.value || SELECTED_LANGUAGE,
 			subject: elements.subject.value,
 			body_text: elements.bodyText.value,
-			body_html: elements.bodyHtml.value,
+			body_html: getRichTextEditorValue(elements.bodyHtml),
 			enabled: elements.enabled.value,
 			fallback: elements.fallback.value
 		};

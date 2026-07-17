@@ -5,7 +5,7 @@ $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/ind
 $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/styles/modulardialog.css');
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
-$transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null) ? $this->_['transport_filter_options'] : [];
+$transportOptions = is_array($this->_['transport_options'] ?? null) ? $this->_['transport_options'] : [];
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -52,6 +52,7 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 	.messagehub-form-row-inline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 	.messagehub-form-label { color: #555; font-size: 12px; font-weight: 600; line-height: 1.3; }
 	.messagehub-form-input, .messagehub-form-select, .messagehub-form-textarea { width: 100%; border: 1px solid #cfcfcf; border-radius: 4px; background: #fff; color: #222; font: inherit; font-size: 13px; line-height: 1.4; padding: 7px 9px; }
+	.messagehub-form-input[readonly] { background: #f5f5f5; color: #666; cursor: not-allowed; }
 	.messagehub-form-textarea { min-height: 180px; resize: vertical; }
 	.messagehub-form-textarea-monospace { min-height: 260px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; white-space: pre; }
 	.messagehub-form-hint { color: #666; font-size: 12px; line-height: 1.35; }
@@ -62,7 +63,7 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 
 <div class="messagehub-shell">
 	<h1>Message templates</h1>
-	<p>Message type templates, labels, descriptions and default transports.</p>
+	<p>Message templates define stable message types, labels, descriptions and optional default transports.</p>
 	<div class="messagehub-grid">
 		<div id="messagehub-template-grid"></div>
 		<div id="messagehub-template-output" class="messagehub-output"></div>
@@ -75,18 +76,26 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 		<input type="hidden" id="messagehub-template-id" />
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Type name</span>
+				<span class="messagehub-form-label">Message type ID</span>
 				<input type="text" id="messagehub-template-type-name" class="messagehub-form-input" autocomplete="off" />
+				<span class="messagehub-form-hint">Stable provider identifier. It cannot be changed after the template is created.</span>
 			</label>
 			<label class="messagehub-form-row">
 				<span class="messagehub-form-label">Label</span>
 				<input type="text" id="messagehub-template-label" class="messagehub-form-input" autocomplete="off" />
+				<span class="messagehub-form-hint">&nbsp;</span>
 			</label>
 		</div>
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
 				<span class="messagehub-form-label">Default transport</span>
-				<input type="text" id="messagehub-template-default-transport" class="messagehub-form-input" autocomplete="off" />
+				<select id="messagehub-template-default-transport" class="messagehub-form-select">
+					<option value="">Use system default</option>
+					<?php foreach($transportOptions as $transportOption) { ?>
+						<option value="<?php echo htmlspecialchars((string)($transportOption['value'] ?? ''), ENT_QUOTES); ?>"><?php echo htmlspecialchars((string)($transportOption['label'] ?? $transportOption['value'] ?? ''), ENT_QUOTES); ?></option>
+					<?php } ?>
+				</select>
+				<span class="messagehub-form-hint">Leave empty to use the system-wide default transport.</span>
 			</label>
 			<label class="messagehub-form-row">
 				<span class="messagehub-form-label">Enabled</span>
@@ -94,22 +103,13 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 					<option value="1">Enabled</option>
 					<option value="0">Disabled</option>
 				</select>
-			</label>
-		</div>
-		<div class="messagehub-form-row-inline">
-			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Scope type</span>
-				<input type="text" id="messagehub-template-scope-type" class="messagehub-form-input" autocomplete="off" />
-			</label>
-			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Scope ID</span>
-				<input type="text" id="messagehub-template-scope-id" class="messagehub-form-input" autocomplete="off" />
+				<span class="messagehub-form-hint">&nbsp;</span>
 			</label>
 		</div>
 		<label class="messagehub-form-row">
 			<span class="messagehub-form-label">Description</span>
 			<textarea id="messagehub-template-description" class="messagehub-form-textarea" spellcheck="false"></textarea>
-			<span class="messagehub-form-hint">The template is saved with the entered type, label, optional scope and default transport.</span>
+			<span class="messagehub-form-hint">The technical template ID is generated internally. Scope remains global in the current MessageHub runtime.</span>
 		</label>
 	</div>
 </template>
@@ -118,7 +118,7 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
-	const TRANSPORT_FILTER_OPTIONS = [{ value: '', label: 'All transports' }, ...<?php echo json_encode($transportFilterOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>];
+	const TRANSPORT_FILTER_OPTIONS = [{ value: '', label: 'All transports' }, ...<?php echo json_encode($transportOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>];
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let editorDialog = null;
@@ -228,9 +228,7 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 			label: root ? root.querySelector('#messagehub-template-label') : null,
 			description: root ? root.querySelector('#messagehub-template-description') : null,
 			defaultTransport: root ? root.querySelector('#messagehub-template-default-transport') : null,
-			enabled: root ? root.querySelector('#messagehub-template-enabled') : null,
-			scopeType: root ? root.querySelector('#messagehub-template-scope-type') : null,
-			scopeId: root ? root.querySelector('#messagehub-template-scope-id') : null
+			enabled: root ? root.querySelector('#messagehub-template-enabled') : null
 		};
 	}
 
@@ -286,14 +284,13 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 		editorDialog.execute('setButtons', buildEditorButtons(isExisting));
 		elements.id.value = isExisting ? getText(record.id, '') : '';
 		elements.typeName.value = isExisting ? getText(record.type_name, '') : '';
+		elements.typeName.readOnly = isExisting;
 		elements.label.value = isExisting ? getText(record.label, '') : '';
 		elements.description.value = isExisting ? getText(record.description, '') : '';
 		elements.defaultTransport.value = isExisting ? getText(record.default_transport, '') : '';
 		elements.enabled.value = isExisting ? rowEnabledValue(record) : '1';
-		elements.scopeType.value = isExisting ? getText(record.scope_type, 'global') : 'global';
-		elements.scopeId.value = isExisting ? getText(record.scope_id, '') : '';
 		editorDialog.open({ source: 'messageTemplateEditor', record });
-		window.setTimeout(() => { elements.typeName.focus(); }, 0);
+		window.setTimeout(() => { (isExisting ? elements.label : elements.typeName).focus(); }, 0);
 		return true;
 	}
 
@@ -308,8 +305,6 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 			type_name: elements.typeName.value,
 			label: elements.label.value || elements.typeName.value,
 			description: elements.description.value,
-			scope_type: elements.scopeType.value || 'global',
-			scope_id: elements.scopeId.value,
 			default_transport: elements.defaultTransport.value,
 			enabled: elements.enabled.value
 		};
@@ -407,9 +402,9 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 		pageSize: BATCH_SIZE,
 		plugins: [createTemplateActionsPlugin(), SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search type, label or description' },
+			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search message type ID, label or description' },
 			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
-				{ key: 'type_name', label: 'Type', type: 'text', placeholder: 'Type', width: 220 },
+				{ key: 'type_name', label: 'Message type ID', type: 'text', placeholder: 'Message type ID', width: 240 },
 				{ key: 'label', label: 'Label', type: 'text', placeholder: 'Label', width: 220 },
 				{ key: 'default_transport_exact', label: 'Transport', type: 'select', options: TRANSPORT_FILTER_OPTIONS },
 				{ key: 'enabled', label: 'State', type: 'select', options: [{ value: '', label: 'All states' }, { value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] }
@@ -428,7 +423,7 @@ $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null)
 			] }
 		},
 		columns: [
-			{ key: 'type_name', label: 'Type', width: 260 },
+			{ key: 'type_name', label: 'Message type ID', width: 280 },
 			{ key: 'label', label: 'Label', width: 260 },
 			{ key: 'description', label: 'Description', width: 420 },
 			{ key: 'default_transport', label: 'Transport', width: 150 },

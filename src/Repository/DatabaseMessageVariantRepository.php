@@ -107,6 +107,9 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 	}
 
 	private function rowForAdmin(array $row): array {
+		$bodyText = (string)($row['body_text'] ?? '');
+		$bodyHtml = (string)($row['body_html'] ?? '');
+
 		return [
 			'id' => (string)$row['id'],
 			'template_id' => (string)$row['template_id'],
@@ -114,9 +117,9 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 			'template_label' => (string)($row['template_label'] ?? ''),
 			'language' => (string)$row['language'],
 			'subject' => (string)$row['subject'],
-			'body_text' => (string)$row['body_text'],
-			'body_html' => (string)($row['body_html'] ?? ''),
-			'body_text_preview' => function_exists('mb_substr') ? mb_substr((string)$row['body_text'], 0, 240) : substr((string)$row['body_text'], 0, 240),
+			'body_text' => $bodyText,
+			'body_html' => $bodyHtml,
+			'body_text_preview' => $this->createBodyPreview($bodyText, $bodyHtml),
 			'fallback' => (int)($row['fallback_flag'] ?? 0),
 			'fallback_label' => ((int)($row['fallback_flag'] ?? 0)) === 1 ? 'Fallback' : '',
 			'enabled' => (int)($row['enabled'] ?? 0),
@@ -124,5 +127,20 @@ final class DatabaseMessageVariantRepository implements IMessageVariantRepositor
 			'created_at' => (string)($row['created_at'] ?? ''),
 			'updated_at' => (string)($row['updated_at'] ?? '')
 		];
+	}
+
+	private function createBodyPreview(string $bodyText, string $bodyHtml): string {
+		$htmlPreview = trim($bodyHtml) !== '' ? $this->htmlToPreviewText($bodyHtml) : '';
+		$preview = trim($htmlPreview) !== '' ? $htmlPreview : $bodyText;
+		$preview = preg_replace('/\s+/u', ' ', trim($preview)) ?? trim($preview);
+
+		return function_exists('mb_substr') ? mb_substr($preview, 0, 240) : substr($preview, 0, 240);
+	}
+
+	private function htmlToPreviewText(string $html): string {
+		$html = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html) ?? $html;
+		$html = preg_replace('#<(br|hr)\b[^>]*>|</(p|div|li|tr|h[1-6])>#i', ' ', $html) ?? $html;
+
+		return html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 	}
 }

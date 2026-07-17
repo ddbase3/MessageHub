@@ -7,9 +7,10 @@ use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
-use MessageHub\Service\MessageFilterOptionService;
+use InvalidArgumentException;
 use MessagingFoundation\Api\IMessageIdGenerator;
 use MessagingFoundation\Api\IMessageTemplateRepository;
+use MessagingFoundation\Api\IMessageTransportRegistry;
 use MessagingFoundation\Dto\MessageTemplate;
 use Throwable;
 
@@ -24,7 +25,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageTemplateRepository $templateRepository,
 		private readonly IMessageIdGenerator $idGenerator,
-		private readonly MessageFilterOptionService $filterOptionService
+		private readonly IMessageTransportRegistry $transportRegistry
 	) {}
 
 	public static function getName(): string { return 'messagetemplateadmindisplay'; }
@@ -37,7 +38,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 		$this->view->setTemplate('Display/MessageTemplateAdminDisplay.php');
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
-		$this->view->assign('transport_filter_options', $this->filterOptionService->getTemplateTransportOptions());
+		$this->view->assign('transport_options', $this->getTransportOptions());
 		return $this->view->loadTemplate();
 	}
 
@@ -48,8 +49,32 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 			$mode = (string)($payload['mode'] ?? 'page');
 			if($mode === 'save') {
 				$id = trim((string)($payload['id'] ?? ''));
-				if($id === '') { $id = $this->idGenerator->createId('tpl'); }
-				$template = new MessageTemplate($id, trim((string)$payload['type_name']), trim((string)$payload['label']), trim((string)($payload['description'] ?? '')), trim((string)($payload['scope_type'] ?? 'global')), trim((string)($payload['scope_id'] ?? '')), trim((string)($payload['default_transport'] ?? '')), (string)($payload['enabled'] ?? '1') === '1');
+				$existing = null;
+				if($id === '') {
+					$id = $this->idGenerator->createId('tpl');
+				} else {
+					$existing = $this->templateRepository->getById($id);
+					if($existing === null) { throw new InvalidArgumentException('Message template not found.'); }
+				}
+
+				$typeName = $existing !== null ? $existing->getTypeName() : trim((string)($payload['type_name'] ?? ''));
+				if($typeName === '') { throw new InvalidArgumentException('Message type ID is required.'); }
+
+				$defaultTransport = trim((string)($payload['default_transport'] ?? ''));
+				if($defaultTransport !== '' && $this->transportRegistry->getTransport($defaultTransport) === null) {
+					throw new InvalidArgumentException('Unknown default transport: ' . $defaultTransport);
+				}
+
+				$template = new MessageTemplate(
+					$id,
+					$typeName,
+					trim((string)($payload['label'] ?? $typeName)),
+					trim((string)($payload['description'] ?? '')),
+					$existing !== null ? $existing->getScopeType() : 'global',
+					$existing !== null ? $existing->getScopeId() : '',
+					$defaultTransport,
+					(string)($payload['enabled'] ?? '1') === '1'
+				);
 				$this->templateRepository->save($template);
 				return $this->json(['ok' => true, 'mode' => 'save', 'id' => $id], $final);
 			}
@@ -63,5 +88,18 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 		} catch(Throwable $exception) {
 			return $this->json(['ok' => false, 'error' => $exception->getMessage()], $final);
 		}
+	}
+
+	private function getTransportOptions(): array {
+		$options = [];
+
+		foreach($this->transportRegistry->getTransports() as $name => $transport) {
+			$options[] = [
+				'value' => $name,
+				'label' => $transport->getLabel() . ' (' . $name . ')'
+			];
+		}
+
+		return $options;
 	}
 }
