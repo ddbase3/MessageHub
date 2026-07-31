@@ -5,6 +5,11 @@ $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/ind
 $serviceUrl = (string) $this->_['service'];
 $transportFilterOptions = is_array($this->_['transport_filter_options'] ?? null) ? $this->_['transport_filter_options'] : [];
 $typeFilterOptions = is_array($this->_['type_filter_options'] ?? null) ? $this->_['type_filter_options'] : [];
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
+	? (string)$translations[$key]
+	: $fallback;
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <style>
@@ -44,8 +49,8 @@ $typeFilterOptions = is_array($this->_['type_filter_options'] ?? null) ? $this->
 	.messagehub-pill-processing { background: #edf6ff; border-color: #c3dff5; color: #284f7c; }
 </style>
 <div class="messagehub-shell">
-	<h1>Message delivery log</h1>
-	<p>Delivery attempts and transport responses.</p>
+	<h1><?php echo $e($t('title', 'Message delivery log')); ?></h1>
+	<p><?php echo $e($t('lead', 'Delivery attempts and transport responses.')); ?></p>
 	<div class="messagehub-grid">
 		<div id="messagehub-delivery-grid"></div>
 		<div id="messagehub-delivery-output" class="messagehub-output"></div>

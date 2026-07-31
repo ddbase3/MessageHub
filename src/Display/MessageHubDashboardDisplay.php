@@ -20,7 +20,11 @@ final class MessageHubDashboardDisplay implements IDisplay {
 	public function getHelp(): string { return 'MessageHub dashboard.'; }
 	public function getOutput(string $out = 'html', bool $final = false): string {
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('messagehub_dashboard_display');
+		$translations = is_array($translations) ? $translations : [];
 		$this->view->setTemplate('Display/MessageHubDashboardDisplay.php');
+		$this->view->assign('translations', $translations);
 		$this->view->assign('stats', $this->loadStats());
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
 		return $this->view->loadTemplate();

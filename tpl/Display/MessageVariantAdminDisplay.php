@@ -9,6 +9,11 @@ $templateOptions = is_array($this->_['templateOptions'] ?? null) ? $this->_['tem
 $languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
 $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
+	? (string)$translations[$key]
+	: $fallback;
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -64,8 +69,8 @@ $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 </style>
 
 <div class="messagehub-shell">
-	<h1>Message variants</h1>
-	<p>Language-specific subject, plain text and HTML body variants.</p>
+	<h1><?php echo $e($t('title', 'Message variants')); ?></h1>
+	<p><?php echo $e($t('lead', 'Language-specific subject, plain text and HTML body variants.')); ?></p>
 	<div class="messagehub-grid">
 		<div id="messagehub-variant-grid"></div>
 		<div id="messagehub-variant-output" class="messagehub-output"></div>
@@ -77,7 +82,7 @@ $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 		<div id="messagehub-variant-error" class="messagehub-error"></div>
 		<input type="hidden" id="messagehub-variant-id" />
 		<label class="messagehub-form-row">
-			<span class="messagehub-form-label">Template</span>
+			<span class="messagehub-form-label"><?php echo $e($t('template', 'Template')); ?></span>
 			<select id="messagehub-variant-template-id" class="messagehub-form-select">
 				<?php foreach($templateOptions as $option): ?>
 					<option value="<?php echo htmlspecialchars((string) $option['value'], ENT_QUOTES); ?>"><?php echo htmlspecialchars((string) $option['label'], ENT_QUOTES); ?></option>
@@ -86,7 +91,7 @@ $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 		</label>
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Language</span>
+				<span class="messagehub-form-label"><?php echo $e($t('language', 'Language')); ?></span>
 				<select id="messagehub-variant-language" class="messagehub-form-select">
 					<?php foreach($languageOptions as $option): ?>
 						<?php $value = (string) ($option['value'] ?? ''); ?>
@@ -95,32 +100,32 @@ $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 				</select>
 			</label>
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Enabled</span>
+				<span class="messagehub-form-label"><?php echo $e($t('enabled', 'Enabled')); ?></span>
 				<select id="messagehub-variant-enabled" class="messagehub-form-select">
-					<option value="1">Enabled</option>
-					<option value="0">Disabled</option>
+					<option value="1"><?php echo $e($t('enabled', 'Enabled')); ?></option>
+					<option value="0"><?php echo $e($t('disabled', 'Disabled')); ?></option>
 				</select>
 			</label>
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Fallback</span>
+				<span class="messagehub-form-label"><?php echo $e($t('fallback', 'Fallback')); ?></span>
 				<select id="messagehub-variant-fallback" class="messagehub-form-select">
-					<option value="0">No</option>
-					<option value="1">Use as fallback</option>
+					<option value="0"><?php echo $e($t('option_no', 'No')); ?></option>
+					<option value="1"><?php echo $e($t('use_as_fallback', 'Use as fallback')); ?></option>
 				</select>
 			</label>
 		</div>
 		<label class="messagehub-form-row">
-			<span class="messagehub-form-label">Subject</span>
+			<span class="messagehub-form-label"><?php echo $e($t('subject', 'Subject')); ?></span>
 			<input type="text" id="messagehub-variant-subject" class="messagehub-form-input" autocomplete="off" />
 		</label>
 		<label class="messagehub-form-row">
-			<span class="messagehub-form-label">Plain text body</span>
+			<span class="messagehub-form-label"><?php echo $e($t('plain_text_body', 'Plain text body')); ?></span>
 			<textarea id="messagehub-variant-body-text" class="messagehub-form-textarea messagehub-form-textarea-monospace" spellcheck="false"></textarea>
 		</label>
 		<div class="messagehub-form-row">
-			<span class="messagehub-form-label">HTML body</span>
+			<span class="messagehub-form-label"><?php echo $e($t('html_body', 'HTML body')); ?></span>
 			<?php echo $bodyHtmlEditor; ?>
-			<span class="messagehub-form-hint">HTML is optional. Leave it empty when only plain text should be stored.</span>
+			<span class="messagehub-form-hint"><?php echo $e($t('html_hint', 'HTML is optional. Leave it empty when only plain text should be stored.')); ?></span>
 		</div>
 	</div>
 </div>

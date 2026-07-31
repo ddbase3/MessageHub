@@ -6,6 +6,11 @@ $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialo
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
 $transportOptions = is_array($this->_['transport_options'] ?? null) ? $this->_['transport_options'] : [];
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
+	? (string)$translations[$key]
+	: $fallback;
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -62,8 +67,8 @@ $transportOptions = is_array($this->_['transport_options'] ?? null) ? $this->_['
 </style>
 
 <div class="messagehub-shell">
-	<h1>Message templates</h1>
-	<p>Message templates define stable message types, labels, descriptions and optional default transports.</p>
+	<h1><?php echo $e($t('title', 'Message templates')); ?></h1>
+	<p><?php echo $e($t('lead', 'Message templates define stable message types, labels, descriptions and optional default transports.')); ?></p>
 	<div class="messagehub-grid">
 		<div id="messagehub-template-grid"></div>
 		<div id="messagehub-template-output" class="messagehub-output"></div>
@@ -76,40 +81,40 @@ $transportOptions = is_array($this->_['transport_options'] ?? null) ? $this->_['
 		<input type="hidden" id="messagehub-template-id" />
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Message type ID</span>
+				<span class="messagehub-form-label"><?php echo $e($t('message_type_id', 'Message type ID')); ?></span>
 				<input type="text" id="messagehub-template-type-name" class="messagehub-form-input" autocomplete="off" />
-				<span class="messagehub-form-hint">Stable provider identifier. It cannot be changed after the template is created.</span>
+				<span class="messagehub-form-hint"><?php echo $e($t('message_type_hint', 'Stable provider identifier. It cannot be changed after the template is created.')); ?></span>
 			</label>
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Label</span>
+				<span class="messagehub-form-label"><?php echo $e($t('label', 'Label')); ?></span>
 				<input type="text" id="messagehub-template-label" class="messagehub-form-input" autocomplete="off" />
 				<span class="messagehub-form-hint">&nbsp;</span>
 			</label>
 		</div>
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Default transport</span>
+				<span class="messagehub-form-label"><?php echo $e($t('default_transport', 'Default transport')); ?></span>
 				<select id="messagehub-template-default-transport" class="messagehub-form-select">
-					<option value="">Use system default</option>
+					<option value=""><?php echo $e($t('use_system_default', 'Use system default')); ?></option>
 					<?php foreach($transportOptions as $transportOption) { ?>
 						<option value="<?php echo htmlspecialchars((string)($transportOption['value'] ?? ''), ENT_QUOTES); ?>"><?php echo htmlspecialchars((string)($transportOption['label'] ?? $transportOption['value'] ?? ''), ENT_QUOTES); ?></option>
 					<?php } ?>
 				</select>
-				<span class="messagehub-form-hint">Leave empty to use the system-wide default transport.</span>
+				<span class="messagehub-form-hint"><?php echo $e($t('default_transport_hint', 'Leave empty to use the system-wide default transport.')); ?></span>
 			</label>
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Enabled</span>
+				<span class="messagehub-form-label"><?php echo $e($t('enabled', 'Enabled')); ?></span>
 				<select id="messagehub-template-enabled" class="messagehub-form-select">
-					<option value="1">Enabled</option>
-					<option value="0">Disabled</option>
+					<option value="1"><?php echo $e($t('enabled', 'Enabled')); ?></option>
+					<option value="0"><?php echo $e($t('disabled', 'Disabled')); ?></option>
 				</select>
 				<span class="messagehub-form-hint">&nbsp;</span>
 			</label>
 		</div>
 		<label class="messagehub-form-row">
-			<span class="messagehub-form-label">Description</span>
+			<span class="messagehub-form-label"><?php echo $e($t('description', 'Description')); ?></span>
 			<textarea id="messagehub-template-description" class="messagehub-form-textarea" spellcheck="false"></textarea>
-			<span class="messagehub-form-hint">The technical template ID is generated internally. Scope remains global in the current MessageHub runtime.</span>
+			<span class="messagehub-form-hint"><?php echo $e($t('description_hint', 'The technical template ID is generated internally. Scope remains global in the current MessageHub runtime.')); ?></span>
 		</label>
 	</div>
 </template>

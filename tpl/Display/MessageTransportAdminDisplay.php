@@ -5,6 +5,11 @@ $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/ind
 $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/styles/modulardialog.css');
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
+	? (string)$translations[$key]
+	: $fallback;
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularDialogCssUrl, ENT_QUOTES); ?>" />
@@ -62,8 +67,8 @@ $serviceUrl = (string) $this->_['service'];
 	@media (max-width: 720px) { .messagehub-form-row-inline, .messagehub-settings-grid { grid-template-columns: 1fr; } }
 </style>
 <div class="messagehub-shell">
-	<h1>Message transports</h1>
-	<p>Discoverable transports and their active settings.</p>
+	<h1><?php echo $e($t('title', 'Message transports')); ?></h1>
+	<p><?php echo $e($t('lead', 'Discoverable transports and their active settings.')); ?></p>
 	<div class="messagehub-grid">
 		<div id="messagehub-transport-grid"></div>
 		<div id="messagehub-transport-output" class="messagehub-output"></div>
@@ -76,11 +81,11 @@ $serviceUrl = (string) $this->_['service'];
 		<input type="hidden" id="messagehub-transport-settings-name" />
 		<div class="messagehub-form-row-inline">
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Transport</span>
+				<span class="messagehub-form-label"><?php echo $e($t('transport', 'Transport')); ?></span>
 				<input type="text" id="messagehub-transport-settings-label" class="messagehub-form-input" readonly />
 			</label>
 			<label class="messagehub-form-row">
-				<span class="messagehub-form-label">Name</span>
+				<span class="messagehub-form-label"><?php echo $e($t('name', 'Name')); ?></span>
 				<input type="text" id="messagehub-transport-settings-key" class="messagehub-form-input" readonly />
 			</label>
 		</div>

@@ -6,6 +6,11 @@ $modularGridJsUrl = (string) $resolve('plugin/ClientStack/assets/modulargrid/ind
 $serviceUrl = (string) $this->_['service'];
 $languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
 $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
+	? (string)$translations[$key]
+	: $fallback;
 ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars($modularGridCssUrl, ENT_QUOTES); ?>" />
 <style>
@@ -47,11 +52,11 @@ $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 	.message-type-sync-result pre { margin: 0; white-space: pre-wrap; }
 </style>
 <div class="messagehub-shell">
-	<h1>Message type synchronization</h1>
-	<p>Synchronizes discoverable <code>IMessageTypeProvider</code> classes into MessageHub templates and default variants. Existing templates and variants are not overwritten.</p>
+	<h1><?php echo $e($t('title', 'Message type synchronization')); ?></h1>
+	<p><?php echo $e($t('lead_before_provider', 'Synchronizes discoverable')); ?> <code>IMessageTypeProvider</code> <?php echo $e($t('lead_after_provider', 'classes into MessageHub templates and default variants. Existing templates and variants are not overwritten.')); ?></p>
 	<div class="messagehub-grid">
 		<div id="message-type-sync-grid"></div>
-		<div class="messagehub-output message-type-sync-result"><pre id="message-type-sync-result">Ready.</pre></div>
+		<div class="messagehub-output message-type-sync-result"><pre id="message-type-sync-result"><?php echo $e($t('ready', 'Ready.')); ?></pre></div>
 	</div>
 </div>
 <script type="module">

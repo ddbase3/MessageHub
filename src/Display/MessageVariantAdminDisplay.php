@@ -38,10 +38,14 @@ final class MessageVariantAdminDisplay implements IDisplay {
 
 	private function handleHtml(): string {
 		$languageOptions = $this->getLanguageOptions();
-		$bodyHtmlEditor = $this->renderBodyHtmlEditor();
 
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('message_variant_admin_display');
+		$translations = is_array($translations) ? $translations : [];
+		$bodyHtmlEditor = $this->renderBodyHtmlEditor($translations);
 		$this->view->setTemplate('Display/MessageVariantAdminDisplay.php');
+		$this->view->assign('translations', $translations);
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
 		$this->view->assign('templateOptions', array_map(fn($tpl) => ['value' => $tpl->getId(), 'label' => $tpl->getTypeName() . ' - ' . $tpl->getLabel()], $this->templateRepository->listAll()));
@@ -51,7 +55,12 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		return $this->view->loadTemplate();
 	}
 
-	private function renderBodyHtmlEditor(): string {
+	private function renderBodyHtmlEditor(array $translations): string {
+		$htmlBodyLabel = trim((string)($translations['html_body'] ?? ''));
+		if($htmlBodyLabel === '') {
+			$htmlBodyLabel = 'HTML body';
+		}
+
 		$this->richTextEditorDisplay->setData([
 			'id' => 'messagehub-variant-body-html',
 			'name' => 'body_html',
@@ -59,7 +68,7 @@ final class MessageVariantAdminDisplay implements IDisplay {
 			'class' => 'messagehub-form-textarea messagehub-form-textarea-monospace',
 			'rows' => 16,
 			'spellcheck' => false,
-			'aria_label' => 'HTML body'
+			'aria_label' => $htmlBodyLabel
 		]);
 
 		return $this->richTextEditorDisplay->getOutput('html', false);

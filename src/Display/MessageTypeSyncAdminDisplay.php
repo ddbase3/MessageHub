@@ -48,7 +48,11 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 		$languageOptions = $this->getLanguageOptions();
 
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('message_type_sync_admin_display');
+		$translations = is_array($translations) ? $translations : [];
 		$this->view->setTemplate('Display/MessageTypeSyncAdminDisplay.php');
+		$this->view->assign('translations', $translations);
 		$this->view->assign(
 			'service',
 			$this->linkTargetService->getLink(

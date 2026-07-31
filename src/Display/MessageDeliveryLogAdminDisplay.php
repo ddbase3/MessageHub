@@ -34,7 +34,11 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 
 	private function handleHtml(): string {
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('message_delivery_log_admin_display');
+		$translations = is_array($translations) ? $translations : [];
 		$this->view->setTemplate('Display/MessageDeliveryLogAdminDisplay.php');
+		$this->view->assign('translations', $translations);
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
 		$this->view->assign('transport_filter_options', $this->filterOptionService->getDeliveryTransportOptions());
