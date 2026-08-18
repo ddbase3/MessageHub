@@ -10,6 +10,8 @@ $languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['lan
 $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 $bodyHtmlEditor = (string) ($this->_['bodyHtmlEditor'] ?? '');
 $translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$gridStrings = is_array($this->_['grid_strings'] ?? null) ? $this->_['grid_strings'] : [];
+$dialogStrings = is_array($this->_['dialog_strings'] ?? null) ? $this->_['dialog_strings'] : [];
 $e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
 	? (string)$translations[$key]
@@ -137,15 +139,26 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
+	const I18N = <?php echo json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const GRID_STRINGS = <?php echo json_encode($gridStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const DIALOG_STRINGS = <?php echo json_encode($dialogStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let editorDialog = null;
 	let editorContent = null;
 	let currentEditorRecord = null;
 
+	function tr(key, fallback, replacements = {}) { let text = String(I18N[key] || fallback || key); Object.entries(replacements).forEach(([name, value]) => { text = text.split('{' + name + '}').join(String(value)); }); return text; }
+
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') { return placeholder; }
 		return String(value);
+	}
+
+	function apiError(response, fallback) {
+		const error = getText(response && response.error, '');
+		if(error === 'A fallback variant must be enabled.') { return tr('error_fallback_requires_enabled', 'A fallback variant must be enabled.'); }
+		return error !== '' ? error : fallback;
 	}
 
 	function getRichTextEditorApi(element) {
@@ -186,9 +199,9 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		if(!output) { return; }
 		output.replaceChildren();
 		const label = document.createElement('strong');
-		label.textContent = 'Last action:';
+		label.textContent = tr('last_action', 'Last action:');
 		output.appendChild(label);
-		output.appendChild(document.createTextNode(' ' + getText(message, 'None')));
+		output.appendChild(document.createTextNode(' ' + getText(message, tr('none_label', 'None'))));
 	}
 
 	function createButton(className, text) {
@@ -236,7 +249,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	async function postJson(payload) {
 		const response = await fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-		if(!response.ok) { throw new Error('Request failed with status ' + String(response.status)); }
+		if(!response.ok) { throw new Error(tr('request_failed_status', 'Request failed with status {status}', { status: response.status })); }
 		return response.json();
 	}
 
@@ -280,9 +293,9 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	function createEditorContent() {
 		if(editorContent) { return editorContent; }
 		const template = document.querySelector('#messagehub-variant-editor-template');
-		if(!template) { throw new Error('Message variant editor template not found.'); }
+		if(!template) { throw new Error(tr('editor_template_not_found', 'Message variant editor template not found.')); }
 		const content = template.querySelector('#messagehub-variant-editor');
-		if(!content) { throw new Error('Message variant editor content not found.'); }
+		if(!content) { throw new Error(tr('editor_content_not_found', 'Message variant editor content not found.')); }
 		content.remove();
 		editorContent = content;
 		return editorContent;
@@ -319,25 +332,26 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	function buildEditorButtons(isExisting) {
 		return [
-			{ key: 'delete', label: 'Delete', danger: true, hidden: !isExisting, async action() { await deleteCurrentEditorRecord(); } },
-			{ key: 'cancel', label: 'Cancel', action: 'close' },
-			{ key: 'save', label: 'Save', primary: true, busyLabel: 'Saving...', async action() { await saveEditor(); } }
+			{ key: 'delete', label: tr('delete', 'Delete'), danger: true, hidden: !isExisting, async action() { await deleteCurrentEditorRecord(); } },
+			{ key: 'cancel', label: tr('cancel', 'Cancel'), action: 'close' },
+			{ key: 'save', label: tr('save', 'Save'), primary: true, busyLabel: tr('saving', 'Saving...'), async action() { await saveEditor(); } }
 		];
 	}
 
 	function initEditorDialog(modularDialogModule) {
 		if(editorDialog) { return editorDialog; }
-		if(!modularDialogModule || typeof modularDialogModule.createStandardDialog !== 'function') { throw new Error('ModularDialog createStandardDialog export not found.'); }
+		if(!modularDialogModule || typeof modularDialogModule.createStandardDialog !== 'function') { throw new Error(tr('dialog_unavailable', 'ModularDialog createStandardDialog export not found.')); }
 		const content = createEditorContent();
 		editorDialog = modularDialogModule.createStandardDialog({
 			id: 'messagehub-variant-editor-dialog',
 			className: 'messagehub-dialog',
 			surfaceClassName: 'messagehub-dialog-surface',
 			size: 'large',
-			title: 'Message variant',
+			title: tr('dialog_title', 'Message variant'),
 			content,
 			status: '',
-			closeButtonPlugin: { label: 'Close' },
+			closeButtonPlugin: { label: tr('close', 'Close') },
+			strings: DIALOG_STRINGS,
 			statusPlugin: { renderEmpty: false },
 			buttons: buildEditorButtons(false)
 		});
@@ -348,13 +362,13 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	function openEditor(record = null) {
 		const elements = getEditorElements();
-		if(!editorDialog || !elements.root) { log('Message variant editor is not available.'); return false; }
+		if(!editorDialog || !elements.root) { log(tr('editor_unavailable', 'Message variant editor is not available.')); return false; }
 		const isExisting = !!record;
 		const templateId = isExisting ? getText(record.template_id, getDefaultTemplateId()) : getDefaultTemplateId();
-		if(templateId === '') { log('Create a template first.'); return false; }
+		if(templateId === '') { log(tr('create_template_first', 'Create a template first.')); return false; }
 		currentEditorRecord = record;
 		clearEditorError();
-		editorDialog.execute('setTitle', isExisting ? 'Edit message variant' : 'Add message variant');
+		editorDialog.execute('setTitle', isExisting ? tr('edit_message_variant', 'Edit message variant') : tr('add_message_variant', 'Add message variant'));
 		editorDialog.execute('setButtons', buildEditorButtons(isExisting));
 		elements.id.value = isExisting ? getText(record.id, '') : '';
 		elements.templateId.value = templateId;
@@ -389,19 +403,19 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		};
 		try {
 			const response = await postJson(payload);
-			if(!response || response.ok !== true) { throw new Error(getText(response && response.error, 'Save failed.')); }
+			if(!response || response.ok !== true) { throw new Error(apiError(response, tr('save_failed', 'Save failed.'))); }
 			closeEditor();
 			await refreshGrid();
-			log('Saved message variant ' + getText(payload.language) + '.');
+			log(tr('saved_message_variant', 'Saved message variant {language}.', { language: getText(payload.language) }));
 		}
 		catch(error) { setEditorError(getText(error && error.message, String(error))); }
 	}
 
 	async function deleteRecord(row) {
-		if(!row || !row.id) { log('Missing message variant id.'); return; }
-		if(!window.confirm('Delete variant ' + getText(row.language) + '?')) { return; }
-		try { await postJson({ mode: 'delete', id: row.id }); await refreshGrid(); log('Deleted message variant ' + getText(row.language) + '.'); }
-		catch(error) { log('Failed to delete message variant: ' + getText(error && error.message, String(error))); }
+		if(!row || !row.id) { log(tr('missing_message_variant_id', 'Missing message variant id.')); return; }
+		if(!window.confirm(tr('delete_variant_confirm', 'Delete variant {language}?', { language: getText(row.language) }))) { return; }
+		try { await postJson({ mode: 'delete', id: row.id }); await refreshGrid(); log(tr('deleted_message_variant', 'Deleted message variant {language}.', { language: getText(row.language) })); }
+		catch(error) { log(tr('delete_message_variant_failed', 'Failed to delete message variant: {error}', { error: getText(error && error.message, String(error)) })); }
 	}
 
 	async function deleteCurrentEditorRecord() {
@@ -436,7 +450,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			fallback.className = 'messagehub-cell-sub';
 			const pill = document.createElement('span');
 			pill.className = 'messagehub-pill messagehub-pill-fallback';
-			pill.textContent = 'Fallback';
+			pill.textContent = tr('fallback', 'Fallback');
 			fallback.appendChild(pill);
 			stack.appendChild(fallback);
 		}
@@ -448,7 +462,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const enabled = rowEnabledValue(row) === '1';
 		const pill = document.createElement('span');
 		pill.className = 'messagehub-pill ' + (enabled ? 'messagehub-pill-enabled' : 'messagehub-pill-disabled');
-		pill.textContent = getText(row.enabled_label, enabled ? 'Enabled' : 'Disabled');
+		pill.textContent = enabled ? tr('enabled', 'Enabled') : tr('disabled', 'Disabled');
 		return pill;
 	}
 
@@ -459,7 +473,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 				return [{ zone: 'topLine1', order: 5, render() {
 					const wrapper = document.createElement('div');
 					wrapper.className = 'messagehub-top-actions';
-					const addButton = createButton('messagehub-button messagehub-button-primary', 'Add variant');
+					const addButton = createButton('messagehub-button messagehub-button-primary', tr('add_variant', 'Add variant'));
 					addButton.addEventListener('click', () => openEditor(null));
 					wrapper.appendChild(addButton);
 					return wrapper;
@@ -468,8 +482,8 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		};
 	}
 
-	const templateFilterOptions = [{ value: '', label: 'All templates' }, ...TEMPLATE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
-	const languageFilterOptions = [{ value: '', label: 'All languages' }, ...LANGUAGE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
+	const templateFilterOptions = [{ value: '', label: tr('all_templates', 'All templates') }, ...TEMPLATE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
+	const languageFilterOptions = [{ value: '', label: tr('all_languages', 'All languages') }, ...LANGUAGE_OPTIONS.map((option) => { return { value: option.value, label: option.label }; })];
 	const modularGridModule = await import(new URL(MODULAR_GRID_URL, document.baseURI).href);
 	let editorInitializationError = '';
 	try {
@@ -479,7 +493,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	}
 	catch(error) {
 		console.error('Message variant editor dialog failed:', error);
-		editorInitializationError = 'Message variant editor failed: ' + getText(error && error.message, String(error));
+		editorInitializationError = tr('editor_failed', 'Message variant editor failed: {error}', { error: getText(error && error.message, String(error)) });
 	}
 	const { AjaxAdapter, ModularGrid, SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin } = modularGridModule;
 	const layout = { type: 'stack', children: [
@@ -502,17 +516,18 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			watchStateKeys: ['query', 'filters']
 		},
 		features: { paging: false },
+		strings: GRID_STRINGS,
 		pageSize: BATCH_SIZE,
 		plugins: [createVariantActionsPlugin(), SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search type, language, subject or body' },
-			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
-				{ key: 'template_id', label: 'Template', type: 'select', options: templateFilterOptions },
-				{ key: 'language', label: 'Language', type: 'select', options: languageFilterOptions },
-				{ key: 'subject', label: 'Subject', type: 'text', placeholder: 'Subject', width: 240 },
-				{ key: 'enabled', label: 'State', type: 'select', options: [{ value: '', label: 'All states' }, { value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] }
+			search: { zone: 'topLine1', order: 10, label: tr('search', 'Search'), placeholder: tr('variant_search_placeholder', 'Search type, language, subject or body') },
+			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: tr('clear_filters', 'Clear filters'), fields: [
+				{ key: 'template_id', label: tr('template', 'Template'), type: 'select', options: templateFilterOptions },
+				{ key: 'language', label: tr('language', 'Language'), type: 'select', options: languageFilterOptions },
+				{ key: 'subject', label: tr('subject', 'Subject'), type: 'text', placeholder: tr('subject', 'Subject'), width: 240 },
+				{ key: 'enabled', label: tr('state', 'State'), type: 'select', options: [{ value: '', label: tr('all_states', 'All states') }, { value: '1', label: tr('enabled', 'Enabled') }, { value: '0', label: tr('disabled', 'Disabled') }] }
 			] },
-			reset: { zone: 'topLine1', order: 30, label: 'Reset', sections: ['query', 'filters', 'columns'] },
+			reset: { zone: 'topLine1', order: 30, label: tr('reset', 'Reset'), sections: ['query', 'filters', 'columns'] },
 			sessionStorage: { key: 'messagehub-variant-grid', sections: ['query', 'filters', 'columns'] },
 			info: { zone: 'statusZone', order: 10, displayMode: 'loaded' },
 			infiniteScroll: {
@@ -521,19 +536,19 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 				containerSelector: '.mg-table-scroll'
 			},
 			rowActions: { items: [
-				{ key: 'edit', label: 'Edit', onClick(context) { openEditor(context.row); } },
-				{ key: 'delete', label: 'Delete', onClick(context) { deleteRecord(context.row); } }
+				{ key: 'edit', label: tr('edit', 'Edit'), onClick(context) { openEditor(context.row); } },
+				{ key: 'delete', label: tr('delete', 'Delete'), onClick(context) { deleteRecord(context.row); } }
 			] }
 		},
 		columns: [
-			{ key: 'type_name', label: 'Template', width: 220 },
-			{ key: 'language', label: 'Language', width: 130, render: renderLanguage },
-			{ key: 'subject', label: 'Subject', width: 360 },
-			{ key: 'body_text_preview', label: 'Body preview', width: 520 },
-			{ key: 'enabled_label', label: 'State', width: 100, render: renderState },
-			{ key: 'id', label: 'ID', width: 260, visible: false }
+			{ key: 'type_name', label: tr('template', 'Template'), width: 220 },
+			{ key: 'language', label: tr('language', 'Language'), width: 130, render: renderLanguage },
+			{ key: 'subject', label: tr('subject', 'Subject'), width: 360 },
+			{ key: 'body_text_preview', label: tr('body_preview', 'Body preview'), width: 520 },
+			{ key: 'enabled_label', label: tr('state', 'State'), width: 100, render: renderState },
+			{ key: 'id', label: tr('id', 'ID'), width: 260, visible: false }
 		]
 	});
 	await grid.init();
-	log(editorInitializationError !== '' ? editorInitializationError : 'Variants loaded.');
+	log(editorInitializationError !== '' ? editorInitializationError : tr('variants_loaded', 'Variants loaded.'));
 </script>

@@ -6,6 +6,9 @@ $modularDialogCssUrl = (string) $resolve('plugin/ClientStack/assets/modulardialo
 $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog/index.js');
 $serviceUrl = (string) $this->_['service'];
 $translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$gridStrings = is_array($this->_['grid_strings'] ?? null) ? $this->_['grid_strings'] : [];
+$dialogStrings = is_array($this->_['dialog_strings'] ?? null) ? $this->_['dialog_strings'] : [];
+$schemaTranslations = is_array($this->_['schema_translations'] ?? null) ? $this->_['schema_translations'] : [];
 $e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
 	? (string)$translations[$key]
@@ -97,11 +100,20 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
+	const I18N = <?php echo json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const GRID_STRINGS = <?php echo json_encode($gridStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const DIALOG_STRINGS = <?php echo json_encode($dialogStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const SCHEMA_I18N = <?php echo json_encode($schemaTranslations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let settingsDialog = null;
 	let settingsContent = null;
 	let currentTransportRecord = null;
+
+	function tr(key, fallback, replacements = {}) { let text = String(I18N[key] || fallback || key); Object.entries(replacements).forEach(([name, value]) => { text = text.split('{' + name + '}').join(String(value)); }); return text; }
+	function schemaTr(key, fallback) { const value = String(SCHEMA_I18N[key] || '').trim(); return value !== '' ? value : fallback; }
+	function transportLabel(name, fallback) { return tr('transport_label_' + String(name || '').trim(), fallback); }
+	function humanizeKey(key) { return String(key || '').replaceAll('_', ' ').replace(/(^|\s)\S/g, (match) => match.toUpperCase()); }
 
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') {
@@ -109,6 +121,72 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		}
 
 		return String(value);
+	}
+
+	function apiError(response, fallback) {
+		const error = getText(response && response.error, '');
+		if(error === 'Invalid transport settings payload.') { return tr('error_invalid_transport_settings', 'Invalid transport settings payload.'); }
+		if(error === 'Unknown message transport.') { return tr('error_unknown_transport', 'Unknown message transport.'); }
+		return error !== '' ? error : fallback;
+	}
+
+	function enumLabel(key, entry) {
+		const value = String(entry === '' ? 'empty' : entry).toLowerCase();
+		return schemaTr('enum_' + key + '_' + value, schemaTr('enum_' + value, entry === '' ? tr('empty_value', '(empty)') : String(entry)));
+	}
+
+	function schemaDescription(key, fallback) {
+		const direct = String(SCHEMA_I18N['description_' + key] || '').trim();
+		if(direct !== '') { return direct; }
+		if(fallback === 'ConfigValue definition or fixed secret') { return schemaTr('description_configvalue_secret', fallback); }
+		if(fallback === 'ConfigValue definition or fixed endpoint URL') { return schemaTr('description_configvalue_endpoint', fallback); }
+		return fallback;
+	}
+
+	function localizeSummary(value) {
+		const exact = {
+			'No delivery settings required.': tr('summary_no_delivery_settings', 'No delivery settings required.'),
+			'Not configured.': tr('summary_not_configured', 'Not configured.'),
+			'Messages are discarded successfully.': tr('summary_discarded', 'Messages are discarded successfully.'),
+			'Messages are discarded successfully': tr('summary_discarded', 'Messages are discarded successfully.'),
+			'Adaptive Card payload': tr('summary_adaptive_card', 'Adaptive Card payload'),
+			'Workflow text payload': tr('summary_workflow_text', 'Workflow text payload'),
+			'Custom blocks configured': tr('summary_custom_blocks', 'Custom blocks configured'),
+			'Text message': tr('summary_text_message', 'Text message'),
+			'Link unfurling enabled': tr('summary_link_unfurling_enabled', 'Link unfurling enabled'),
+			'Link unfurling disabled': tr('summary_link_unfurling_disabled', 'Link unfurling disabled'),
+			'Plain text': tr('summary_plain_text', 'Plain text'),
+			'Silent delivery': tr('summary_silent_delivery', 'Silent delivery'),
+			'Normal notification': tr('summary_normal_notification', 'Normal notification'),
+			'Link preview enabled': tr('summary_link_preview_enabled', 'Link preview enabled'),
+			'Link preview disabled': tr('summary_link_preview_disabled', 'Link preview disabled'),
+			'Sender from message': tr('summary_sender_from_message', 'Sender from message'),
+			'PHP mail': tr('summary_php_mail', 'PHP mail')
+		};
+		const prefixes = {
+			'Method': tr('summary_method', 'Method'), 'Endpoint': tr('summary_endpoint', 'Endpoint'), 'Content': tr('summary_content', 'Content'),
+			'Authentication': tr('summary_authentication', 'Authentication'), 'Webhook URL': tr('summary_webhook_url', 'Webhook URL'),
+			'Server': tr('summary_server', 'Server'), 'Default topic': tr('summary_default_topic', 'Default topic'), 'Priority': tr('summary_priority', 'Priority'),
+			'Reason': tr('summary_reason', 'Reason'), 'From': tr('summary_from', 'From'), 'Encryption': tr('summary_encryption', 'Encryption'),
+			'Password': tr('summary_password', 'Password'), 'Binary': tr('summary_binary', 'Binary'), 'Bot token': tr('summary_bot_token', 'Bot token'),
+			'Default chat': tr('summary_default_chat', 'Default chat'), 'Parse mode': tr('summary_parse_mode', 'Parse mode'),
+			'Messaging service': tr('summary_messaging_service', 'Messaging service'), 'Account SID': tr('summary_account_sid', 'Account SID'),
+			'Auth token': tr('summary_auth_token', 'Auth token'), 'API version': tr('summary_api_version', 'API version'),
+			'Phone number ID': tr('summary_phone_number_id', 'Phone number ID'), 'Access token': tr('summary_access_token', 'Access token'),
+			'Username': tr('summary_username', 'Username')
+		};
+		return String(value || '').split(' | ').map((part) => {
+			part = String(part || '').trim();
+			if(exact[part]) { return exact[part]; }
+			if(part.indexOf('Messages are discarded successfully | Reason: ') === 0) { return part; }
+			const separator = part.indexOf(': ');
+			if(separator < 0) { return part; }
+			const prefix = part.substring(0, separator);
+			let tail = part.substring(separator + 2);
+			const tailMap = { configured: tr('summary_configured', 'configured'), 'not configured': tr('summary_not_configured_short', 'not configured'), enabled: tr('summary_enabled', 'enabled'), disabled: tr('summary_disabled', 'disabled'), None: tr('summary_none', 'None'), none: tr('summary_none_lower', 'none'), default: tr('summary_default', 'default') };
+			if(Object.prototype.hasOwnProperty.call(tailMap, tail)) { tail = tailMap[tail]; }
+			return (prefixes[prefix] || prefix) + ': ' + tail;
+		}).join(' | ');
 	}
 
 	function log(message) {
@@ -120,9 +198,9 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 		element.replaceChildren();
 		const label = document.createElement('strong');
-		label.textContent = 'Last action:';
+		label.textContent = tr('last_action', 'Last action:');
 		element.appendChild(label);
-		element.appendChild(document.createTextNode(' ' + getText(message, 'None')));
+		element.appendChild(document.createTextNode(' ' + getText(message, tr('none_label', 'None'))));
 	}
 
 	function buildFilterPayload(filters) {
@@ -147,7 +225,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		});
 
 		if(!response.ok) {
-			throw new Error('Request failed with status ' + String(response.status));
+			throw new Error(tr('request_failed_status', 'Request failed with status {status}', { status: response.status }));
 		}
 
 		return response.json();
@@ -213,7 +291,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		}
 
 		container.className = 'messagehub-pill messagehub-pill-enabled';
-		container.textContent = 'Enabled';
+		container.textContent = tr('enabled', 'Enabled');
 		return container;
 	}
 
@@ -221,14 +299,14 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const pill = document.createElement('span');
 		const isDefault = String(row && row.is_default ? row.is_default : '0') === '1';
 		pill.className = 'messagehub-pill ' + (isDefault ? 'messagehub-pill-enabled' : '');
-		pill.textContent = isDefault ? 'Default' : 'No';
+		pill.textContent = isDefault ? tr('default', 'Default') : tr('no_label', 'No');
 		return pill;
 	}
 
 	function renderSettingsSummary(value) {
 		const text = document.createElement('div');
 		text.className = 'messagehub-settings-summary';
-		text.textContent = getText(value);
+		text.textContent = localizeSummary(getText(value));
 		return text;
 	}
 
@@ -247,14 +325,14 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const template = document.querySelector('#messagehub-transport-settings-template');
 
 		if(!template || !template.content) {
-			throw new Error('Transport settings editor template not found.');
+			throw new Error(tr('editor_template_not_found', 'Transport settings editor template not found.'));
 		}
 
 		const fragment = template.content.cloneNode(true);
 		const content = fragment.querySelector('#messagehub-transport-settings-editor');
 
 		if(!content) {
-			throw new Error('Transport settings editor content not found.');
+			throw new Error(tr('editor_content_not_found', 'Transport settings editor content not found.'));
 		}
 
 		settingsContent = content;
@@ -336,7 +414,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 		const label = document.createElement('span');
 		label.className = 'messagehub-form-label';
-		label.textContent = key;
+		label.textContent = schemaTr('field_' + key, humanizeKey(key));
 		row.appendChild(label);
 
 		let control = null;
@@ -346,8 +424,8 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			control.className = 'messagehub-form-select';
 
 			[
-				{ value: '1', label: 'true' },
-				{ value: '0', label: 'false' }
+				{ value: '1', label: tr('true_label', 'true') },
+				{ value: '0', label: tr('false_label', 'false') }
 			].forEach((entry) => {
 				const option = document.createElement('option');
 				option.value = entry.value;
@@ -364,7 +442,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			definition.enum.forEach((entry) => {
 				const option = document.createElement('option');
 				option.value = String(entry);
-				option.textContent = String(entry === '' ? '(empty)' : entry);
+				option.textContent = enumLabel(key, entry);
 				control.appendChild(option);
 			});
 
@@ -397,7 +475,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		if(definition && definition.description) {
 			const hint = document.createElement('span');
 			hint.className = 'messagehub-form-hint';
-			hint.textContent = String(definition.description);
+			hint.textContent = schemaDescription(key, String(definition.description));
 			row.appendChild(hint);
 		}
 
@@ -425,7 +503,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		if(keys.length === 0) {
 			const hint = document.createElement('div');
 			hint.className = 'messagehub-form-hint messagehub-form-row-full';
-			hint.textContent = 'This transport does not expose configurable settings.';
+			hint.textContent = tr('no_configurable_settings', 'This transport does not expose configurable settings.');
 			elements.fields.appendChild(hint);
 			return;
 		}
@@ -484,8 +562,8 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	function buildSettingsButtons() {
 		return [
-			{ key: 'cancel', label: 'Cancel', action: 'close' },
-			{ key: 'save', label: 'Save', primary: true, busyLabel: 'Saving...', async action() { await saveSettingsEditor(); } }
+			{ key: 'cancel', label: tr('cancel', 'Cancel'), action: 'close' },
+			{ key: 'save', label: tr('save', 'Save'), primary: true, busyLabel: tr('saving', 'Saving...'), async action() { await saveSettingsEditor(); } }
 		];
 	}
 
@@ -495,7 +573,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		}
 
 		if(!modularDialogModule || typeof modularDialogModule.createStandardDialog !== 'function') {
-			throw new Error('ModularDialog createStandardDialog export not found.');
+			throw new Error(tr('dialog_unavailable', 'ModularDialog createStandardDialog export not found.'));
 		}
 
 		const content = createSettingsContent();
@@ -504,10 +582,11 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			className: 'messagehub-dialog',
 			surfaceClassName: 'messagehub-dialog-surface',
 			size: 'large',
-			title: 'Transport settings',
+			title: tr('transport_settings', 'Transport settings'),
 			content,
 			status: '',
-			closeButtonPlugin: { label: 'Close' },
+			closeButtonPlugin: { label: tr('close', 'Close') },
+			strings: DIALOG_STRINGS,
 			statusPlugin: { renderEmpty: false },
 			buttons: buildSettingsButtons()
 		});
@@ -524,17 +603,17 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const elements = getSettingsElements();
 
 		if(!settingsDialog || !elements.root) {
-			log('Transport settings editor is not available.');
+			log(tr('editor_unavailable', 'Transport settings editor is not available.'));
 			return;
 		}
 
 		currentTransportRecord = row;
 		clearSettingsError();
-		settingsDialog.execute('setTitle', 'Edit settings: ' + getText(row && row.label, getText(row && row.name, 'Transport')));
+		settingsDialog.execute('setTitle', tr('edit_settings_title', 'Edit settings: {transport}', { transport: transportLabel(row && row.name, getText(row && row.label, getText(row && row.name, tr('transport', 'Transport')))) }));
 		settingsDialog.execute('setButtons', buildSettingsButtons());
 		elements.name.value = getText(row && row.name, '');
 		elements.key.value = getText(row && row.name, '');
-		elements.label.value = getText(row && row.label, '');
+		elements.label.value = transportLabel(row && row.name, getText(row && row.label, ''));
 		renderSettingsFields(row);
 		settingsDialog.open({ source: 'messageTransportSettings', record: row });
 	}
@@ -557,13 +636,13 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			});
 
 			if(!response || response.ok !== true) {
-				throw new Error(getText(response && response.error, 'Save failed.'));
+				throw new Error(apiError(response, tr('save_failed', 'Save failed.')));
 			}
 
 			const name = elements.name ? elements.name.value : '';
 			closeSettingsEditor();
 			await refreshGrid();
-			log('Saved transport settings for ' + getText(name) + '.');
+			log(tr('saved_transport_settings', 'Saved transport settings for {transport}.', { transport: getText(name) }));
 		}
 		catch(error) {
 			setSettingsError(getText(error && error.message, String(error)));
@@ -579,7 +658,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	}
 	catch(error) {
 		console.error('Message transport settings dialog failed:', error);
-		settingsInitializationError = 'Transport settings editor failed: ' + getText(error && error.message, String(error));
+		settingsInitializationError = tr('editor_failed', 'Transport settings editor failed: {error}', { error: getText(error && error.message, String(error)) });
 	}
 
 	const { AjaxAdapter, ModularGrid, SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin } = modularGridModule;
@@ -611,48 +690,49 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		features: {
 			paging: false
 		},
+		strings: GRID_STRINGS,
 		pageSize: BATCH_SIZE,
 		plugins: [SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin, InfiniteScrollPlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search name, label or configuration' },
-			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
-				{ key: 'name', label: 'Name', type: 'text', placeholder: 'Name', width: 180 },
-				{ key: 'is_enabled', label: 'Enabled', type: 'select', options: [{ value: '', label: 'All' }, { value: '1', label: 'Enabled only' }, { value: '0', label: 'Disabled only' }] },
-				{ key: 'is_default', label: 'Default', type: 'select', options: [{ value: '', label: 'All' }, { value: '1', label: 'Default only' }, { value: '0', label: 'Not default' }] }
+			search: { zone: 'topLine1', order: 10, label: tr('search', 'Search'), placeholder: tr('transport_search_placeholder', 'Search name, label or configuration') },
+			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: tr('clear_filters', 'Clear filters'), fields: [
+				{ key: 'name', label: tr('name', 'Name'), type: 'text', placeholder: tr('name', 'Name'), width: 180 },
+				{ key: 'is_enabled', label: tr('enabled', 'Enabled'), type: 'select', options: [{ value: '', label: tr('all', 'All') }, { value: '1', label: tr('enabled_only', 'Enabled only') }, { value: '0', label: tr('disabled_only', 'Disabled only') }] },
+				{ key: 'is_default', label: tr('default', 'Default'), type: 'select', options: [{ value: '', label: tr('all', 'All') }, { value: '1', label: tr('default_only', 'Default only') }, { value: '0', label: tr('not_default', 'Not default') }] }
 			] },
-			reset: { zone: 'topLine1', order: 20, label: 'Reset', sections: ['query', 'filters', 'columns'] },
+			reset: { zone: 'topLine1', order: 20, label: tr('reset', 'Reset'), sections: ['query', 'filters', 'columns'] },
 			sessionStorage: { key: 'messagehub-transport-grid', sections: ['query', 'filters', 'columns'] },
 			info: { zone: 'statusZone', order: 10, displayMode: 'loaded' },
 			infiniteScroll: { threshold: 180, pageSize: BATCH_SIZE, containerSelector: '.mg-table-scroll' },
 			rowActions: { items: [
-				{ key: 'default', label: 'Set as default', async onClick(context) { await postJson({ mode: 'save-default', default_transport: context.row.name }); await refreshGrid(); log('Default transport set to ' + context.row.name + '.'); } },
-				{ key: 'toggle-enabled', label: 'Toggle enabled', async onClick(context) {
+				{ key: 'default', label: tr('set_as_default', 'Set as default'), async onClick(context) { await postJson({ mode: 'save-default', default_transport: context.row.name }); await refreshGrid(); log(tr('default_transport_set', 'Default transport set to {transport}.', { transport: context.row.name })); } },
+				{ key: 'toggle-enabled', label: tr('toggle_enabled', 'Toggle enabled'), async onClick(context) {
 					const enabled = String(context.row && context.row.is_enabled ? context.row.is_enabled : '0') !== '1';
 					await postJson({ mode: 'set-enabled', name: context.row.name, enabled });
 					await refreshGrid();
-					log((enabled ? 'Enabled ' : 'Disabled ') + context.row.name + '.');
+					log(enabled ? tr('enabled_transport', 'Enabled {transport}.', { transport: context.row.name }) : tr('disabled_transport', 'Disabled {transport}.', { transport: context.row.name }));
 				} },
-				{ key: 'settings', label: 'Edit settings', onClick(context) { openSettingsEditor(context.row); } },
-				{ key: 'reset-settings', label: 'Reset settings', async onClick(context) {
-					if(!window.confirm('Reset all stored settings for ' + context.row.name + '?')) {
+				{ key: 'settings', label: tr('edit_settings', 'Edit settings'), onClick(context) { openSettingsEditor(context.row); } },
+				{ key: 'reset-settings', label: tr('reset_settings', 'Reset settings'), async onClick(context) {
+					if(!window.confirm(tr('reset_settings_confirm', 'Reset all stored settings for {transport}?', { transport: context.row.name }))) {
 						return;
 					}
 
 					await postJson({ mode: 'reset-transport', name: context.row.name });
 					await refreshGrid();
-					log('Reset transport settings for ' + context.row.name + '.');
+					log(tr('reset_transport_settings', 'Reset transport settings for {transport}.', { transport: context.row.name }));
 				} }
 			] }
 		},
 		columns: [
-			{ key: 'name', label: 'Name', width: 180 },
-			{ key: 'label', label: 'Label', width: 260 },
-			{ key: 'is_enabled', label: 'Enabled', width: 110, render: renderEnabled },
-			{ key: 'is_default', label: 'Default', width: 100, render: renderDefault },
-			{ key: 'settings_summary', label: 'Configuration', width: 520, render: renderSettingsSummary },
-			{ key: 'schema_json', label: 'Schema', width: 520, visible: false, render: renderPre }
+			{ key: 'name', label: tr('name', 'Name'), width: 180 },
+			{ key: 'label', label: tr('label', 'Label'), width: 260, render(value, row) { return transportLabel(row && row.name, getText(value)); } },
+			{ key: 'is_enabled', label: tr('enabled', 'Enabled'), width: 110, render: renderEnabled },
+			{ key: 'is_default', label: tr('default', 'Default'), width: 100, render: renderDefault },
+			{ key: 'settings_summary', label: tr('configuration', 'Configuration'), width: 520, render: renderSettingsSummary },
+			{ key: 'schema_json', label: tr('schema', 'Schema'), width: 520, visible: false, render: renderPre }
 		]
 	});
 	await grid.init();
-	log(settingsInitializationError !== '' ? settingsInitializationError : 'Transports loaded.');
+	log(settingsInitializationError !== '' ? settingsInitializationError : tr('transports_loaded', 'Transports loaded.'));
 </script>

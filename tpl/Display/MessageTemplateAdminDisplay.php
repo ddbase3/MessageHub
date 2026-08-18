@@ -7,6 +7,8 @@ $modularDialogJsUrl = (string) $resolve('plugin/ClientStack/assets/modulardialog
 $serviceUrl = (string) $this->_['service'];
 $transportOptions = is_array($this->_['transport_options'] ?? null) ? $this->_['transport_options'] : [];
 $translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$gridStrings = is_array($this->_['grid_strings'] ?? null) ? $this->_['grid_strings'] : [];
+$dialogStrings = is_array($this->_['dialog_strings'] ?? null) ? $this->_['dialog_strings'] : [];
 $e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
 	? (string)$translations[$key]
@@ -123,16 +125,29 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_DIALOG_URL = <?php echo json_encode($modularDialogJsUrl, JSON_UNESCAPED_SLASHES); ?>;
-	const TRANSPORT_FILTER_OPTIONS = [{ value: '', label: 'All transports' }, ...<?php echo json_encode($transportOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>];
+	const I18N = <?php echo json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const GRID_STRINGS = <?php echo json_encode($gridStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const DIALOG_STRINGS = <?php echo json_encode($dialogStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const TRANSPORT_FILTER_OPTIONS = [{ value: '', label: tr('all_transports', 'All transports') }, ...<?php echo json_encode($transportOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>];
 	const BATCH_SIZE = 50;
 	let grid = null;
 	let editorDialog = null;
 	let editorContent = null;
 	let currentEditorRecord = null;
 
+	function tr(key, fallback, replacements = {}) { let text = String(I18N[key] || fallback || key); Object.entries(replacements).forEach(([name, value]) => { text = text.split('{' + name + '}').join(String(value)); }); return text; }
+
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') { return placeholder; }
 		return String(value);
+	}
+
+	function apiError(response, fallback) {
+		const error = getText(response && response.error, '');
+		if(error === 'Message template not found.') { return tr('error_template_not_found', 'Message template not found.'); }
+		if(error === 'Message type ID is required.') { return tr('error_type_required', 'Message type ID is required.'); }
+		if(error.indexOf('Unknown default transport: ') === 0) { return tr('error_unknown_default_transport', 'Unknown default transport: {transport}', { transport: error.substring('Unknown default transport: '.length) }); }
+		return error !== '' ? error : fallback;
 	}
 
 	function log(message) {
@@ -140,9 +155,9 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		if(!output) { return; }
 		output.replaceChildren();
 		const label = document.createElement('strong');
-		label.textContent = 'Last action:';
+		label.textContent = tr('last_action', 'Last action:');
 		output.appendChild(label);
-		output.appendChild(document.createTextNode(' ' + getText(message, 'None')));
+		output.appendChild(document.createTextNode(' ' + getText(message, tr('none_label', 'None'))));
 	}
 
 	function createButton(className, text) {
@@ -170,7 +185,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	async function postJson(payload) {
 		const response = await fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-		if(!response.ok) { throw new Error('Request failed with status ' + String(response.status)); }
+		if(!response.ok) { throw new Error(tr('request_failed_status', 'Request failed with status {status}', { status: response.status })); }
 		return response.json();
 	}
 
@@ -215,10 +230,10 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	function createEditorContent() {
 		if(editorContent) { return editorContent; }
 		const template = document.querySelector('#messagehub-template-editor-template');
-		if(!template || !template.content) { throw new Error('Message template editor template not found.'); }
+		if(!template || !template.content) { throw new Error(tr('editor_template_not_found', 'Message template editor template not found.')); }
 		const fragment = template.content.cloneNode(true);
 		const content = fragment.querySelector('#messagehub-template-editor');
-		if(!content) { throw new Error('Message template editor content not found.'); }
+		if(!content) { throw new Error(tr('editor_content_not_found', 'Message template editor content not found.')); }
 		editorContent = content;
 		return editorContent;
 	}
@@ -252,25 +267,26 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	function buildEditorButtons(isExisting) {
 		return [
-			{ key: 'delete', label: 'Delete', danger: true, hidden: !isExisting, async action() { await deleteCurrentEditorRecord(); } },
-			{ key: 'cancel', label: 'Cancel', action: 'close' },
-			{ key: 'save', label: 'Save', primary: true, busyLabel: 'Saving...', async action() { await saveEditor(); } }
+			{ key: 'delete', label: tr('delete', 'Delete'), danger: true, hidden: !isExisting, async action() { await deleteCurrentEditorRecord(); } },
+			{ key: 'cancel', label: tr('cancel', 'Cancel'), action: 'close' },
+			{ key: 'save', label: tr('save', 'Save'), primary: true, busyLabel: tr('saving', 'Saving...'), async action() { await saveEditor(); } }
 		];
 	}
 
 	function initEditorDialog(modularDialogModule) {
 		if(editorDialog) { return editorDialog; }
-		if(!modularDialogModule || typeof modularDialogModule.createStandardDialog !== 'function') { throw new Error('ModularDialog createStandardDialog export not found.'); }
+		if(!modularDialogModule || typeof modularDialogModule.createStandardDialog !== 'function') { throw new Error(tr('dialog_unavailable', 'ModularDialog createStandardDialog export not found.')); }
 		const content = createEditorContent();
 		editorDialog = modularDialogModule.createStandardDialog({
 			id: 'messagehub-template-editor-dialog',
 			className: 'messagehub-dialog',
 			surfaceClassName: 'messagehub-dialog-surface',
 			size: 'large',
-			title: 'Message template',
+			title: tr('dialog_title', 'Message template'),
 			content,
 			status: '',
-			closeButtonPlugin: { label: 'Close' },
+			closeButtonPlugin: { label: tr('close', 'Close') },
+			strings: DIALOG_STRINGS,
 			statusPlugin: { renderEmpty: false },
 			buttons: buildEditorButtons(false)
 		});
@@ -281,11 +297,11 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 
 	function openEditor(record = null) {
 		const elements = getEditorElements();
-		if(!editorDialog || !elements.root) { log('Message template editor is not available.'); return false; }
+		if(!editorDialog || !elements.root) { log(tr('editor_unavailable', 'Message template editor is not available.')); return false; }
 		const isExisting = !!record;
 		currentEditorRecord = record;
 		clearEditorError();
-		editorDialog.execute('setTitle', isExisting ? 'Edit message template' : 'Add message template');
+		editorDialog.execute('setTitle', isExisting ? tr('edit_message_template', 'Edit message template') : tr('add_message_template', 'Add message template'));
 		editorDialog.execute('setButtons', buildEditorButtons(isExisting));
 		elements.id.value = isExisting ? getText(record.id, '') : '';
 		elements.typeName.value = isExisting ? getText(record.type_name, '') : '';
@@ -315,19 +331,19 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		};
 		try {
 			const response = await postJson(payload);
-			if(!response || response.ok !== true) { throw new Error(getText(response && response.error, 'Save failed.')); }
+			if(!response || response.ok !== true) { throw new Error(apiError(response, tr('save_failed', 'Save failed.'))); }
 			closeEditor();
 			await refreshGrid();
-			log('Saved message template ' + getText(payload.type_name) + '.');
+			log(tr('saved_message_template', 'Saved message template {type}.', { type: getText(payload.type_name) }));
 		}
 		catch(error) { setEditorError(getText(error && error.message, String(error))); }
 	}
 
 	async function deleteRecord(row) {
-		if(!row || !row.id) { log('Missing message template id.'); return; }
-		if(!window.confirm('Delete template ' + getText(row.type_name) + '?')) { return; }
-		try { await postJson({ mode: 'delete', id: row.id }); await refreshGrid(); log('Deleted message template ' + getText(row.type_name) + '.'); }
-		catch(error) { log('Failed to delete message template: ' + getText(error && error.message, String(error))); }
+		if(!row || !row.id) { log(tr('missing_message_template_id', 'Missing message template id.')); return; }
+		if(!window.confirm(tr('delete_template_confirm', 'Delete template {type}?', { type: getText(row.type_name) }))) { return; }
+		try { await postJson({ mode: 'delete', id: row.id }); await refreshGrid(); log(tr('deleted_message_template', 'Deleted message template {type}.', { type: getText(row.type_name) })); }
+		catch(error) { log(tr('delete_message_template_failed', 'Failed to delete message template: {error}', { error: getText(error && error.message, String(error)) })); }
 	}
 
 	async function deleteCurrentEditorRecord() {
@@ -351,7 +367,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const enabled = rowEnabledValue(row) === '1';
 		const pill = document.createElement('span');
 		pill.className = 'messagehub-pill ' + (enabled ? 'messagehub-pill-enabled' : 'messagehub-pill-disabled');
-		pill.textContent = getText(row.enabled_label, enabled ? 'Enabled' : 'Disabled');
+		pill.textContent = enabled ? tr('enabled', 'Enabled') : tr('disabled', 'Disabled');
 		return pill;
 	}
 
@@ -362,7 +378,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 				return [{ zone: 'topLine1', order: 5, render() {
 					const wrapper = document.createElement('div');
 					wrapper.className = 'messagehub-top-actions';
-					const addButton = createButton('messagehub-button messagehub-button-primary', 'Add template');
+					const addButton = createButton('messagehub-button messagehub-button-primary', tr('add_template', 'Add template'));
 					addButton.addEventListener('click', () => openEditor(null));
 					wrapper.appendChild(addButton);
 					return wrapper;
@@ -380,7 +396,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	}
 	catch(error) {
 		console.error('Message template editor dialog failed:', error);
-		editorInitializationError = 'Message template editor failed: ' + getText(error && error.message, String(error));
+		editorInitializationError = tr('editor_failed', 'Message template editor failed: {error}', { error: getText(error && error.message, String(error)) });
 	}
 
 	const { AjaxAdapter, ModularGrid, SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin } = modularGridModule;
@@ -404,17 +420,18 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			watchStateKeys: ['query', 'filters']
 		},
 		features: { paging: false },
+		strings: GRID_STRINGS,
 		pageSize: BATCH_SIZE,
 		plugins: [createTemplateActionsPlugin(), SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, InfiniteScrollPlugin, RowActionsPlugin, ResetPlugin, SessionStoragePlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search message type ID, label or description' },
-			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
-				{ key: 'type_name', label: 'Message type ID', type: 'text', placeholder: 'Message type ID', width: 240 },
-				{ key: 'label', label: 'Label', type: 'text', placeholder: 'Label', width: 220 },
-				{ key: 'default_transport_exact', label: 'Transport', type: 'select', options: TRANSPORT_FILTER_OPTIONS },
-				{ key: 'enabled', label: 'State', type: 'select', options: [{ value: '', label: 'All states' }, { value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] }
+			search: { zone: 'topLine1', order: 10, label: tr('search', 'Search'), placeholder: tr('template_search_placeholder', 'Search message type ID, label or description') },
+			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: tr('clear_filters', 'Clear filters'), fields: [
+				{ key: 'type_name', label: tr('message_type_id', 'Message type ID'), type: 'text', placeholder: tr('message_type_id', 'Message type ID'), width: 240 },
+				{ key: 'label', label: tr('label', 'Label'), type: 'text', placeholder: tr('label', 'Label'), width: 220 },
+				{ key: 'default_transport_exact', label: tr('transport', 'Transport'), type: 'select', options: TRANSPORT_FILTER_OPTIONS },
+				{ key: 'enabled', label: tr('state', 'State'), type: 'select', options: [{ value: '', label: tr('all_states', 'All states') }, { value: '1', label: tr('enabled', 'Enabled') }, { value: '0', label: tr('disabled', 'Disabled') }] }
 			] },
-			reset: { zone: 'topLine1', order: 30, label: 'Reset', sections: ['query', 'filters', 'columns'] },
+			reset: { zone: 'topLine1', order: 30, label: tr('reset', 'Reset'), sections: ['query', 'filters', 'columns'] },
 			sessionStorage: { key: 'messagehub-template-grid', sections: ['query', 'filters', 'columns'] },
 			info: { zone: 'statusZone', order: 10, displayMode: 'loaded' },
 			infiniteScroll: {
@@ -423,19 +440,19 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 				containerSelector: '.mg-table-scroll'
 			},
 			rowActions: { items: [
-				{ key: 'edit', label: 'Edit', onClick(context) { openEditor(context.row); } },
-				{ key: 'delete', label: 'Delete', onClick(context) { deleteRecord(context.row); } }
+				{ key: 'edit', label: tr('edit', 'Edit'), onClick(context) { openEditor(context.row); } },
+				{ key: 'delete', label: tr('delete', 'Delete'), onClick(context) { deleteRecord(context.row); } }
 			] }
 		},
 		columns: [
-			{ key: 'type_name', label: 'Message type ID', width: 280 },
-			{ key: 'label', label: 'Label', width: 260 },
-			{ key: 'description', label: 'Description', width: 420 },
-			{ key: 'default_transport', label: 'Transport', width: 150 },
-			{ key: 'enabled_label', label: 'State', width: 100, render: renderState },
-			{ key: 'id', label: 'ID', width: 260, visible: false }
+			{ key: 'type_name', label: tr('message_type_id', 'Message type ID'), width: 280 },
+			{ key: 'label', label: tr('label', 'Label'), width: 260 },
+			{ key: 'description', label: tr('description', 'Description'), width: 420 },
+			{ key: 'default_transport', label: tr('transport', 'Transport'), width: 150 },
+			{ key: 'enabled_label', label: tr('state', 'State'), width: 100, render: renderState },
+			{ key: 'id', label: tr('id', 'ID'), width: 260, visible: false }
 		]
 	});
 	await grid.init();
-	log(editorInitializationError !== '' ? editorInitializationError : 'Templates loaded.');
+	log(editorInitializationError !== '' ? editorInitializationError : tr('templates_loaded', 'Templates loaded.'));
 </script>

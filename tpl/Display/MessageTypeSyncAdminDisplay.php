@@ -7,6 +7,7 @@ $serviceUrl = (string) $this->_['service'];
 $languageOptions = is_array($this->_['languageOptions'] ?? null) ? $this->_['languageOptions'] : [];
 $selectedLanguage = (string) ($this->_['selectedLanguage'] ?? 'en');
 $translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$gridStrings = is_array($this->_['grid_strings'] ?? null) ? $this->_['grid_strings'] : [];
 $e = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $t = static fn(string $key, string $fallback): string => trim((string)($translations[$key] ?? '')) !== ''
 	? (string)$translations[$key]
@@ -62,6 +63,8 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 <script type="module">
 	const ENDPOINT_URL = <?php echo json_encode($serviceUrl, JSON_UNESCAPED_SLASHES); ?>;
 	const MODULAR_GRID_URL = <?php echo json_encode($modularGridJsUrl, JSON_UNESCAPED_SLASHES); ?>;
+	const I18N = <?php echo json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+	const GRID_STRINGS = <?php echo json_encode($gridStrings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 	const INITIAL_PROVIDERS = <?php echo json_encode(array_values($providers), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	const LANGUAGE_OPTIONS = <?php echo json_encode(array_values($languageOptions), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	const SELECTED_LANGUAGE = <?php echo json_encode($selectedLanguage, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
@@ -69,6 +72,8 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	let grid = null;
 	let currentProviders = Array.isArray(INITIAL_PROVIDERS) ? INITIAL_PROVIDERS : [];
 	let languageValue = SELECTED_LANGUAGE;
+
+	function tr(key, fallback, replacements = {}) { let text = String(I18N[key] || fallback || key); Object.entries(replacements).forEach(([name, value]) => { text = text.split('{' + name + '}').join(String(value)); }); return text; }
 
 	function getText(value, placeholder = '-') {
 		if(value === null || value === undefined || value === '') {
@@ -82,6 +87,9 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const resultElement = document.getElementById('message-type-sync-result');
 
 		if(resultElement) {
+			if(data && typeof data === 'object' && data.error === 'Message type synchronization request failed.') {
+				data = { ...data, error: tr('sync_request_failed', 'Message type synchronization request failed.') };
+			}
 			resultElement.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
 		}
 	}
@@ -108,7 +116,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		});
 
 		if(!response.ok) {
-			throw new Error('Request failed with status ' + String(response.status));
+			throw new Error(tr('request_failed_status', 'Request failed with status {status}', { status: response.status }));
 		}
 
 		return response.json();
@@ -213,7 +221,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 						languageGroup.className = 'mg-control-group';
 						const languageLabel = document.createElement('span');
 						languageLabel.className = 'mg-label';
-						languageLabel.textContent = 'Language';
+						languageLabel.textContent = tr('language', 'Language');
 						const languageInput = document.createElement('select');
 						languageInput.className = 'mg-select';
 						LANGUAGE_OPTIONS.forEach((languageOption) => {
@@ -227,10 +235,10 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 						languageGroup.appendChild(languageLabel);
 						languageGroup.appendChild(languageInput);
 
-						const syncAllButton = createButton('messagehub-button messagehub-button-primary', 'Sync all providers');
+						const syncAllButton = createButton('messagehub-button messagehub-button-primary', tr('sync_all_providers', 'Sync all providers'));
 						syncAllButton.addEventListener('click', () => { void syncAll(); });
 
-						const refreshButton = createButton('messagehub-button', 'Refresh list');
+						const refreshButton = createButton('messagehub-button', tr('refresh_list', 'Refresh list'));
 						refreshButton.addEventListener('click', () => { void reloadProviders(); });
 
 						wrapper.appendChild(languageGroup);
@@ -248,7 +256,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 		const installed = row && row.installed ? true : false;
 		const pill = document.createElement('span');
 		pill.className = 'messagehub-pill ' + (installed ? 'messagehub-pill-enabled' : 'messagehub-pill-disabled');
-		pill.textContent = installed ? 'yes' : 'no';
+		pill.textContent = installed ? tr('yes_lower', 'yes') : tr('no_lower', 'no');
 		return pill;
 	}
 
@@ -259,7 +267,7 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 	}
 
 	function renderSyncButton(value, row) {
-		const button = createButton('messagehub-button', 'Sync');
+		const button = createButton('messagehub-button', tr('sync', 'Sync'));
 		button.addEventListener('click', () => { void syncOne(row && row.name ? row.name : ''); });
 		return button;
 	}
@@ -297,25 +305,26 @@ $t = static fn(string $key, string $fallback): string => trim((string)($translat
 			paging: false
 		},
 		pageSize: BATCH_SIZE,
+		strings: GRID_STRINGS,
 		plugins: [createSyncActionsPlugin(), SearchPlugin, FiltersPlugin, HeaderMenuPlugin, InfoPlugin, ResetPlugin, SessionStoragePlugin, InfiniteScrollPlugin],
 		pluginOptions: {
-			search: { zone: 'topLine1', order: 10, label: 'Search', placeholder: 'Search name, label or template' },
-			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: 'Clear filters', fields: [
-				{ key: 'installed', label: 'Installed', type: 'select', options: [{ value: '', label: 'All providers' }, { value: '1', label: 'Installed' }, { value: '0', label: 'Not installed' }] }
+			search: { zone: 'topLine1', order: 10, label: tr('search', 'Search'), placeholder: tr('sync_search_placeholder', 'Search name, label or template') },
+			filters: { zone: 'topLine2', order: 10, stateKey: 'filters', showClearButton: true, clearLabel: tr('clear_filters', 'Clear filters'), fields: [
+				{ key: 'installed', label: tr('installed', 'Installed'), type: 'select', options: [{ value: '', label: tr('all_providers', 'All providers') }, { value: '1', label: tr('installed', 'Installed') }, { value: '0', label: tr('not_installed', 'Not installed') }] }
 			] },
-			reset: { zone: 'topLine1', order: 30, label: 'Reset', sections: ['query', 'filters', 'columns'] },
+			reset: { zone: 'topLine1', order: 30, label: tr('reset', 'Reset'), sections: ['query', 'filters', 'columns'] },
 			sessionStorage: { key: 'message-type-sync-grid', sections: ['query', 'filters', 'columns'] },
 			info: { zone: 'statusZone', order: 10, displayMode: 'loaded' },
 			infiniteScroll: { threshold: 180, pageSize: BATCH_SIZE, containerSelector: '.mg-table-scroll' }
 		},
 		columns: [
-			{ key: 'name', label: 'Name', width: 320, render: renderName },
-			{ key: 'label', label: 'Label', width: 320 },
-			{ key: 'installed', label: 'Installed', width: 120, render: renderInstalled },
-			{ key: 'template_id', label: 'Template ID', width: 260, render: renderName },
-			{ key: '__sync', label: 'Action', width: 120, sortable: false, render: renderSyncButton }
+			{ key: 'name', label: tr('name', 'Name'), width: 320, render: renderName },
+			{ key: 'label', label: tr('label', 'Label'), width: 320 },
+			{ key: 'installed', label: tr('installed', 'Installed'), width: 120, render: renderInstalled },
+			{ key: 'template_id', label: tr('template_id', 'Template ID'), width: 260, render: renderName },
+			{ key: '__sync', label: tr('action', 'Action'), width: 120, sortable: false, render: renderSyncButton }
 		]
 	});
 	await grid.init();
-	show('Ready.');
+	show(tr('ready', 'Ready.'));
 </script>

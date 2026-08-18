@@ -33,7 +33,15 @@ final class MessageVariantAdminDisplay implements IDisplay {
 
 	public static function getName(): string { return 'messagevariantadmindisplay'; }
 	public function setData($data) {}
-	public function getHelp(): string { return 'Message variant administration.'; }
+	public function getHelp(): string {
+		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('message_variant_admin_display');
+
+		return is_array($translations) && trim((string)($translations['help'] ?? '')) !== ''
+			? (string)$translations['help']
+			: 'Message variant administration.';
+	}
 	public function getOutput(string $out = 'html', bool $final = false): string { return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
 
 	private function handleHtml(): string {
@@ -41,11 +49,19 @@ final class MessageVariantAdminDisplay implements IDisplay {
 
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->loadBricks('Display');
+		$commonTranslations = $this->view->getBricks('messagehub_common');
+		$commonTranslations = is_array($commonTranslations) ? $commonTranslations : [];
 		$translations = $this->view->getBricks('message_variant_admin_display');
-		$translations = is_array($translations) ? $translations : [];
+		$translations = array_merge($commonTranslations, is_array($translations) ? $translations : []);
+		$gridStrings = $this->view->getBricks('clientstack_modulargrid');
+		$gridStrings = is_array($gridStrings) ? $gridStrings : [];
+		$dialogStrings = $this->view->getBricks('clientstack_modulardialog');
+		$dialogStrings = is_array($dialogStrings) ? $dialogStrings : [];
 		$bodyHtmlEditor = $this->renderBodyHtmlEditor($translations);
 		$this->view->setTemplate('Display/MessageVariantAdminDisplay.php');
 		$this->view->assign('translations', $translations);
+		$this->view->assign('grid_strings', $gridStrings);
+		$this->view->assign('dialog_strings', $dialogStrings);
 		$this->view->assign('service', $this->linkTargetService->getLink(['name' => self::getName(), 'out' => 'json']));
 		$this->view->assign('resolve', fn($src) => $this->assetResolver->resolve((string)$src));
 		$this->view->assign('templateOptions', array_map(fn($tpl) => ['value' => $tpl->getId(), 'label' => $tpl->getTypeName() . ' - ' . $tpl->getLabel()], $this->templateRepository->listAll()));

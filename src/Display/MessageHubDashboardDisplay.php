@@ -17,7 +17,15 @@ final class MessageHubDashboardDisplay implements IDisplay {
 
 	public static function getName(): string { return 'messagehubdashboarddisplay'; }
 	public function setData($data) {}
-	public function getHelp(): string { return 'MessageHub dashboard.'; }
+	public function getHelp(): string {
+		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('messagehub_dashboard_display');
+
+		return is_array($translations) && trim((string)($translations['help'] ?? '')) !== ''
+			? (string)$translations['help']
+			: 'MessageHub dashboard.';
+	}
 	public function getOutput(string $out = 'html', bool $final = false): string {
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->loadBricks('Display');

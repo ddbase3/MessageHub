@@ -41,7 +41,13 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'Message type synchronization.';
+		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->loadBricks('Display');
+		$translations = $this->view->getBricks('message_type_sync_admin_display');
+
+		return is_array($translations) && trim((string)($translations['help'] ?? '')) !== ''
+			? (string)$translations['help']
+			: 'Message type synchronization.';
 	}
 
 	private function handleHtml(): string {
@@ -49,10 +55,15 @@ final class MessageTypeSyncAdminDisplay implements IDisplay {
 
 		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
 		$this->view->loadBricks('Display');
+		$commonTranslations = $this->view->getBricks('messagehub_common');
+		$commonTranslations = is_array($commonTranslations) ? $commonTranslations : [];
 		$translations = $this->view->getBricks('message_type_sync_admin_display');
-		$translations = is_array($translations) ? $translations : [];
+		$translations = array_merge($commonTranslations, is_array($translations) ? $translations : []);
+		$gridStrings = $this->view->getBricks('clientstack_modulargrid');
+		$gridStrings = is_array($gridStrings) ? $gridStrings : [];
 		$this->view->setTemplate('Display/MessageTypeSyncAdminDisplay.php');
 		$this->view->assign('translations', $translations);
+		$this->view->assign('grid_strings', $gridStrings);
 		$this->view->assign(
 			'service',
 			$this->linkTargetService->getLink(
