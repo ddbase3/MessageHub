@@ -2097,3 +2097,9 @@ IMessageService
 ```
 
 MessageHub then handles rendering, queueing, delivery, retrying and logging.
+
+
+## Documentation
+
+- [Frequently Asked Questions](docs/faq.md)
+- [Privacy and data processing](PRIVACY.md)
