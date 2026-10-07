@@ -1,0 +1,21 @@
+{
+	"manifestVersion": 1,
+	"name": "MessageHub",
+	"namespace": "MessageHub",
+	"version": "4.3.0",
+	"description": "Protocol-neutral, queue-based messaging implementation for BASE3.",
+	"license": "GPL-3.0-or-later",
+	"maintainers": [
+		{
+			"name": "Daniel Dahme",
+			"url": "https://www.base3.de",
+			"email": "info@base3.de"
+		}
+	],
+	"repository": "https://github.com/ddbase3/MessageHub",
+	"dependencies": {
+		"Base3Framework": ">=4.10.0",
+		"MessagingFoundation": ">=4.2.0",
+		"UiFoundation": ">=4.3.0"
+	}
+}
