@@ -31,7 +31,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 	public static function getName(): string { return 'messagetemplateadmindisplay'; }
 	public function setData($data) {}
 	public function getHelp(): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$translations = $this->view->getBricks('message_template_admin_display');
 
@@ -42,7 +42,7 @@ final class MessageTemplateAdminDisplay implements IDisplay {
 	public function getOutput(string $out = 'html', bool $final = false): string { return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
 
 	private function handleHtml(): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$commonTranslations = $this->view->getBricks('messagehub_common');
 		$commonTranslations = is_array($commonTranslations) ? $commonTranslations : [];

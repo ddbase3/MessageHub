@@ -18,7 +18,7 @@ final class MessageHubDashboardDisplay implements IDisplay {
 	public static function getName(): string { return 'messagehubdashboarddisplay'; }
 	public function setData($data) {}
 	public function getHelp(): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$translations = $this->view->getBricks('messagehub_dashboard_display');
 
@@ -27,7 +27,7 @@ final class MessageHubDashboardDisplay implements IDisplay {
 			: 'MessageHub dashboard.';
 	}
 	public function getOutput(string $out = 'html', bool $final = false): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$translations = $this->view->getBricks('messagehub_dashboard_display');
 		$translations = is_array($translations) ? $translations : [];

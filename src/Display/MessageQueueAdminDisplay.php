@@ -29,7 +29,7 @@ final class MessageQueueAdminDisplay implements IDisplay {
 	public static function getName(): string { return 'messagequeueadmindisplay'; }
 	public function setData($data) {}
 	public function getHelp(): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$translations = $this->view->getBricks('message_queue_admin_display');
 
@@ -43,7 +43,7 @@ final class MessageQueueAdminDisplay implements IDisplay {
 	}
 
 	private function handleHtml(): string {
-		$this->view->setPath(DIR_PLUGIN . 'MessageHub');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$commonTranslations = $this->view->getBricks('messagehub_common');
 		$commonTranslations = is_array($commonTranslations) ? $commonTranslations : [];
