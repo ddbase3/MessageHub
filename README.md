@@ -2103,3 +2103,18 @@ MessageHub then handles rendering, queueing, delivery, retrying and logging.
 
 - [Frequently Asked Questions](docs/faq.md)
 - [Privacy and data processing](PRIVACY.md)
+
+## Settings navigation ownership
+
+MessageHub contributes its own Messaging root tab and individual
+Dashboard, Templates, Variants, Type Sync, Queue, Deliveries, and Transports
+tabs from `src/SettingsTab/`. Every child also implements `IFeature` with its
+own `feature/<tab getName()>` permission, evaluated by
+`IAuthorizationService`. Its user-facing names, descriptions, and feature labels
+are stored exclusively under `MessageHub/lang/Settings/` for all supported
+languages. No strings or feature declarations are copied into ClientStack.
+
+The corresponding MessageHub display checks its feature for both HTML and
+JSON requests. This does not replace native operation permissions or request
+validation. Project-specific demo settings must be contributed by the plugin
+which actually owns the demo, not by MessageHub.

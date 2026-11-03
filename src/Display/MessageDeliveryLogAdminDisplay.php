@@ -2,6 +2,9 @@
 
 namespace MessageHub\Display;
 
+use Base3\Usermanager\Permission;
+use Base3\Authorization\Dto\AuthorizationRequest;
+use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
@@ -21,7 +24,8 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageDeliveryRepository $deliveryRepository,
-		private readonly MessageFilterOptionService $filterOptionService
+		private readonly MessageFilterOptionService $filterOptionService,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string { return 'messagedeliverylogadmindisplay'; }
@@ -37,6 +41,14 @@ final class MessageDeliveryLogAdminDisplay implements IDisplay {
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!$this->settingsAuthorization->decide(new AuthorizationRequest(
+			$this->settingsAuthorization->getDefaultAuthority(),
+			Permission::for('feature', \MessageHub\SettingsTab\MessagedeliverylogadminSettingsTab::getName())
+		))->isAllowed()) {
+			http_response_code(403);
+			return '';
+		}
+
 		return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml();
 	}
 

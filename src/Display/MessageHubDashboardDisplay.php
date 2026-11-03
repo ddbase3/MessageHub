@@ -2,6 +2,9 @@
 
 namespace MessageHub\Display;
 
+use Base3\Usermanager\Permission;
+use Base3\Authorization\Dto\AuthorizationRequest;
+use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
@@ -12,7 +15,8 @@ final class MessageHubDashboardDisplay implements IDisplay {
 	public function __construct(
 		private readonly IMvcView $view,
 		private readonly IAssetResolver $assetResolver,
-		private readonly IDatabase $database
+		private readonly IDatabase $database,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string { return 'messagehubdashboarddisplay'; }
@@ -27,6 +31,14 @@ final class MessageHubDashboardDisplay implements IDisplay {
 			: 'MessageHub dashboard.';
 	}
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!$this->settingsAuthorization->decide(new AuthorizationRequest(
+			$this->settingsAuthorization->getDefaultAuthority(),
+			Permission::for('feature', \MessageHub\SettingsTab\MessagehubdashboardSettingsTab::getName())
+		))->isAllowed()) {
+			http_response_code(403);
+			return '';
+		}
+
 		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 		$translations = $this->view->getBricks('messagehub_dashboard_display');

@@ -434,3 +434,11 @@ A production deployment should explicitly decide retention for:
 - backups
 
 The built-in delivery cleanup job addresses only delivery, recipient, and attachment history. It does not by itself provide a complete messaging retention policy.
+
+## Messaging Settings navigation authorization
+
+Messaging tabs and feature descriptions are defined within MessageHub, with
+translations in `MessageHub/lang/Settings/`. Their feature access decisions
+control navigation; MessageHub admin display entry points also check the
+matching feature before HTML and JSON operations. This does not alter the
+message queue, delivery log, retention periods, or transport recipients.

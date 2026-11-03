@@ -2,6 +2,9 @@
 
 namespace MessageHub\Display;
 
+use Base3\Usermanager\Permission;
+use Base3\Authorization\Dto\AuthorizationRequest;
+use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
@@ -28,7 +31,8 @@ final class MessageVariantAdminDisplay implements IDisplay {
 		private readonly IMessageTemplateRepository $templateRepository,
 		private readonly IMessageIdGenerator $idGenerator,
 		private readonly IRichTextEditorDisplay $richTextEditorDisplay,
-		private readonly ILanguage $language
+		private readonly ILanguage $language,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string { return 'messagevariantadmindisplay'; }
@@ -42,7 +46,15 @@ final class MessageVariantAdminDisplay implements IDisplay {
 			? (string)$translations['help']
 			: 'Message variant administration.';
 	}
-	public function getOutput(string $out = 'html', bool $final = false): string { return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
+	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!$this->settingsAuthorization->decide(new AuthorizationRequest(
+			$this->settingsAuthorization->getDefaultAuthority(),
+			Permission::for('feature', \MessageHub\SettingsTab\MessagevariantadminSettingsTab::getName())
+		))->isAllowed()) {
+			http_response_code(403);
+			return '';
+		}
+ return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
 
 	private function handleHtml(): string {
 		$languageOptions = $this->getLanguageOptions();

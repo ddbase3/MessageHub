@@ -2,6 +2,9 @@
 
 namespace MessageHub\Display;
 
+use Base3\Usermanager\Permission;
+use Base3\Authorization\Dto\AuthorizationRequest;
+use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Api\IAssetResolver;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
@@ -21,7 +24,8 @@ final class MessageTransportAdminDisplay implements IDisplay {
 		private readonly IAssetResolver $assetResolver,
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly IMessageTransportRegistry $transportRegistry,
-		private readonly ISettingsStore $settingsStore
+		private readonly ISettingsStore $settingsStore,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string { return 'messagetransportadmindisplay'; }
@@ -35,7 +39,15 @@ final class MessageTransportAdminDisplay implements IDisplay {
 			? (string)$translations['help']
 			: 'Message transport administration.';
 	}
-	public function getOutput(string $out = 'html', bool $final = false): string { return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
+	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!$this->settingsAuthorization->decide(new AuthorizationRequest(
+			$this->settingsAuthorization->getDefaultAuthority(),
+			Permission::for('feature', \MessageHub\SettingsTab\MessagetransportadminSettingsTab::getName())
+		))->isAllowed()) {
+			http_response_code(403);
+			return '';
+		}
+ return strtolower($out) === 'json' ? $this->handleJson($final) : $this->handleHtml(); }
 
 	private function handleHtml(): string {
 		$this->view->setPath(dirname(__DIR__, 2));
