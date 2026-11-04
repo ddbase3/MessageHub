@@ -205,26 +205,4 @@ final class MessageTransportAdminDisplay implements IDisplay {
 		return $default;
 	}
 
-	private function filterRows(array $rows, array $request): array {
-		$search = strtolower((string)($request['search'] ?? ''));
-		$filters = is_array($request['filters'] ?? null) ? $request['filters'] : [];
-
-		return array_values(array_filter($rows, function(array $row) use ($search, $filters): bool {
-			if($search !== '') {
-				$haystack = strtolower(implode(' ', [(string)($row['name'] ?? ''), (string)($row['label'] ?? ''), (string)($row['settings_summary'] ?? ''), (string)($row['settings_json'] ?? ''), (string)($row['schema_json'] ?? '')]));
-				if(strpos($haystack, $search) === false) { return false; }
-			}
-
-			$name = isset($filters['name']) && is_scalar($filters['name']) ? strtolower(trim((string)$filters['name'])) : '';
-			if($name !== '' && strpos(strtolower((string)($row['name'] ?? '')), $name) === false) { return false; }
-
-			$enabled = isset($filters['is_enabled']) && is_scalar($filters['is_enabled']) ? trim((string)$filters['is_enabled']) : '';
-			if($enabled !== '' && (string)(int)($row['is_enabled'] ?? 0) !== $enabled) { return false; }
-
-			$default = isset($filters['is_default']) && is_scalar($filters['is_default']) ? trim((string)$filters['is_default']) : '';
-			if($default !== '' && (string)(int)($row['is_default'] ?? 0) !== $default) { return false; }
-
-			return true;
-		}));
-	}
 }

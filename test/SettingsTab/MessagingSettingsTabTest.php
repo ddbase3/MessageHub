@@ -21,7 +21,7 @@ final class MessagingSettingsTabTest extends TestCase {
 				self::assertSame('messagetemplateadminsettingstab', $section);
 				return $key;
 			});
-		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization = $this->createStub(IAuthorizationService::class);
 		$authorization->method('getDefaultAuthority')->willReturn('base3');
 		$authorization->method('decide')->willReturn(AuthorizationDecision::deny());
 		$tab = new MessagetemplateadminSettingsTab($translation, $authorization);
@@ -38,7 +38,7 @@ final class MessagingSettingsTabTest extends TestCase {
 	}
 
 	public function testRootIsOnlyNavigation(): void {
-		$tab = new MessagingSettingsTab($this->createMock(ITranslation::class));
+		$tab = new MessagingSettingsTab($this->createStub(ITranslation::class));
 		self::assertNull($tab->getParentTabName());
 		self::assertNull($tab->getDisplayName());
 		self::assertNull($tab->getDisplayData());

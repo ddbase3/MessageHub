@@ -148,10 +148,6 @@ final class HttpWebhookMessageTransport extends AbstractHttpMessageTransport imp
 			? $this->replacePlaceholders($customPayload, $message)
 			: [];
 
-		if(!is_array($payload)) {
-			$payload = [];
-		}
-
 		if($customPayload === [] || $this->readBool($settings, 'include_message', true)) {
 			$payload['message'] = $message->toArray();
 		}
