@@ -7,6 +7,6 @@ use UiFoundation\Settings\AbstractSettingsTab;
 final class MessagingSettingsTab extends AbstractSettingsTab {
 
 	public function getOrder(): int {
-		return 120;
+		return 115;
 	}
 }
