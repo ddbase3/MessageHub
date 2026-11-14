@@ -1,15 +1,30 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Job;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Configuration\Api\IConfiguration;
-use Base3\Event\Api\IEventManager;
-use Base3\Logger\Api\ILogger;
-use MessageHub\Job\MessageQueueWorkerJob;
-use MessageHub\Service\MessageDeliveryService;
-use MessagingFoundation\Api\IMessageDeliveryRepository;
-use MessagingFoundation\Api\IMessageQueueRepository;
-use MessagingFoundation\Api\IMessageTransportRegistry;
+namespace Base3\MessageHub\Test\Job;
+
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\MessageHub\Job\MessageQueueWorkerJob;
+use Base3\MessageHub\Service\MessageDeliveryService;
+use Base3\MessagingFoundation\Api\IMessageDeliveryRepository;
+use Base3\MessagingFoundation\Api\IMessageQueueRepository;
+use Base3\MessagingFoundation\Api\IMessageTransportRegistry;
 use PHPUnit\Framework\TestCase;
 
 final class MessageQueueWorkerJobTest extends TestCase {

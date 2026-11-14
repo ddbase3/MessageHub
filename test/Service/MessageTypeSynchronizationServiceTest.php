@@ -1,17 +1,32 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Service;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
+
+namespace Base3\MessageHub\Test\Service;
 
 require_once __DIR__ . '/../Fixture/MessageTypeFixture.php';
 
-use Base3\Api\IClassMap;
-use MessageHub\Service\MessageTypeSynchronizationService;
-use MessageHub\Test\Fixture\MessageTypeFixture;
-use MessagingFoundation\Api\IMessageIdGenerator;
-use MessagingFoundation\Api\IMessageTemplateRepository;
-use MessagingFoundation\Api\IMessageVariantRepository;
-use MessagingFoundation\Dto\MessageTemplate;
-use MessagingFoundation\Dto\MessageVariant;
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\MessageHub\Service\MessageTypeSynchronizationService;
+use Base3\MessageHub\Test\Fixture\MessageTypeFixture;
+use Base3\MessagingFoundation\Api\IMessageIdGenerator;
+use Base3\MessagingFoundation\Api\IMessageTemplateRepository;
+use Base3\MessagingFoundation\Api\IMessageVariantRepository;
+use Base3\MessagingFoundation\Dto\MessageTemplate;
+use Base3\MessagingFoundation\Dto\MessageVariant;
 use PHPUnit\Framework\TestCase;
 
 final class MessageTypeSynchronizationServiceTest extends TestCase {

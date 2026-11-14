@@ -1,20 +1,35 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Transport;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\ConfigValue\Api\IConfigValueResolver;
-use Base3\Logger\Api\ILogger;
-use MessageHub\Transport\HttpWebhookMessageTransport;
-use MessageHub\Transport\MicrosoftTeamsMessageTransport;
-use MessageHub\Transport\NtfyMessageTransport;
-use MessageHub\Transport\PhpMailerMessageTransport;
-use MessageHub\Transport\SendmailMessageTransport;
-use MessageHub\Transport\SlackMessageTransport;
-use MessageHub\Transport\SmtpMessageTransport;
-use MessageHub\Transport\TelegramMessageTransport;
-use MessageHub\Transport\TwilioSmsMessageTransport;
-use MessageHub\Transport\WhatsAppCloudMessageTransport;
-use MessagingFoundation\Dto\Message;
+namespace Base3\MessageHub\Test\Transport;
+
+use Base3\CoreFoundation\ConfigValue\Api\IConfigValueResolver;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\MessageHub\Transport\HttpWebhookMessageTransport;
+use Base3\MessageHub\Transport\MicrosoftTeamsMessageTransport;
+use Base3\MessageHub\Transport\NtfyMessageTransport;
+use Base3\MessageHub\Transport\PhpMailerMessageTransport;
+use Base3\MessageHub\Transport\SendmailMessageTransport;
+use Base3\MessageHub\Transport\SlackMessageTransport;
+use Base3\MessageHub\Transport\SmtpMessageTransport;
+use Base3\MessageHub\Transport\TelegramMessageTransport;
+use Base3\MessageHub\Transport\TwilioSmsMessageTransport;
+use Base3\MessageHub\Transport\WhatsAppCloudMessageTransport;
+use Base3\MessagingFoundation\Dto\Message;
 use PHPUnit\Framework\TestCase;
 
 final class TransportSummaryBranchesTest extends TestCase {
@@ -84,7 +99,7 @@ final class TransportSummaryBranchesTest extends TestCase {
 
 	public function testTextOnlyProvidersDoNotAdvertiseSupportForAttachments(): void {
 		$original = new Message('notice', 'Subject', 'Body');
-		$withAttachment = $original->withAttachments([new \MessagingFoundation\Dto\MessageAttachment('/not/a/file')]);
+		$withAttachment = $original->withAttachments([new \Base3\MessagingFoundation\Dto\MessageAttachment('/not/a/file')]);
 		foreach([SlackMessageTransport::class, NtfyMessageTransport::class,
 			TelegramMessageTransport::class, MicrosoftTeamsMessageTransport::class,
 			TwilioSmsMessageTransport::class, WhatsAppCloudMessageTransport::class] as $class) {

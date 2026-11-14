@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Job;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Configuration\Api\IConfiguration;
-use Base3\Settings\Api\ISettingsStore;
-use Base3\Worker\Api\IJob;
-use MessagingFoundation\Api\IMessageDeliveryRepository;
+namespace Base3\MessageHub\Job;
+
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\CoreFoundation\Worker\Api\IJob;
+use Base3\MessagingFoundation\Api\IMessageDeliveryRepository;
 
 final class MessageDeliveryCleanupJob implements IJob {
 

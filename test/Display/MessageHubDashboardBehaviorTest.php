@@ -1,13 +1,28 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Display;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Api\IAssetResolver;
-use Base3\Api\IMvcView;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Dto\AuthorizationDecision;
-use Base3\Database\Api\IDatabase;
-use MessageHub\Display\MessageHubDashboardDisplay;
+namespace Base3\MessageHub\Test\Display;
+
+use Base3\CoreFoundation\Api\IAssetResolver;
+use Base3\CoreFoundation\Api\IMvcView;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationDecision;
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\MessageHub\Display\MessageHubDashboardDisplay;
 use PHPUnit\Framework\TestCase;
 
 final class MessageHubDashboardBehaviorTest extends TestCase {

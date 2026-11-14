@@ -408,6 +408,6 @@ Some provider transports return outbound message IDs, but MessageHub does not cu
 
 ## Can MessageHub be extended with another transport?
 
-Yes. Implement `MessagingFoundation\Api\IMessageTransport` with a stable lowercase `getName()` value and make the class discoverable through the BASE3 class map.
+Yes. Implement `Base3\MessagingFoundation\Api\IMessageTransport` with a stable lowercase `getName()` value and make the class discoverable through the BASE3 class map.
 
 The transport is then available through `IMessageTransportRegistry` without adding it to a hard-coded transport switch.

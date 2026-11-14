@@ -1,18 +1,33 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Display;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Usermanager\Permission;
-use Base3\Authorization\Dto\AuthorizationRequest;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Api\IAssetResolver;
-use Base3\Api\IDisplay;
-use Base3\Api\IMvcView;
-use Base3\Api\IRequest;
-use Base3\LinkTarget\Api\ILinkTargetService;
-use MessageHub\Service\MessageDeliveryService;
-use MessageHub\Service\MessageFilterOptionService;
-use MessagingFoundation\Api\IMessageQueueRepository;
+namespace Base3\MessageHub\Display;
+
+use Base3\CoreFoundation\Usermanager\Permission;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationRequest;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Api\IAssetResolver;
+use Base3\CoreFoundation\Api\IDisplay;
+use Base3\CoreFoundation\Api\IMvcView;
+use Base3\CoreFoundation\Api\IRequest;
+use Base3\CoreFoundation\LinkTarget\Api\ILinkTargetService;
+use Base3\MessageHub\Service\MessageDeliveryService;
+use Base3\MessageHub\Service\MessageFilterOptionService;
+use Base3\MessagingFoundation\Api\IMessageQueueRepository;
 use Throwable;
 
 final class MessageQueueAdminDisplay implements IDisplay {
@@ -45,7 +60,7 @@ final class MessageQueueAdminDisplay implements IDisplay {
 	public function getOutput(string $out = 'html', bool $final = false): string {
 		if (!$this->settingsAuthorization->decide(new AuthorizationRequest(
 			$this->settingsAuthorization->getDefaultAuthority(),
-			Permission::for('feature', \MessageHub\SettingsTab\MessagequeueadminSettingsTab::getName())
+			Permission::for('feature', \Base3\MessageHub\SettingsTab\MessagequeueadminSettingsTab::getName())
 		))->isAllowed()) {
 			http_response_code(403);
 			return '';

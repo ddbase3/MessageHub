@@ -1,21 +1,36 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\SettingsTab;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Api\IFeature;
-use Base3\Authorization\Dto\AuthorizationDecision;
-use Base3\Translation\Api\ITranslation;
-use MessageHub\SettingsTab\MessagedeliverylogadminSettingsTab;
-use MessageHub\SettingsTab\MessagehubdashboardSettingsTab;
-use MessageHub\SettingsTab\MessagequeueadminSettingsTab;
-use MessageHub\SettingsTab\MessagetemplateadminSettingsTab;
-use MessageHub\SettingsTab\MessagetransportadminSettingsTab;
-use MessageHub\SettingsTab\MessagetypesyncadminSettingsTab;
-use MessageHub\SettingsTab\MessagevariantadminSettingsTab;
+namespace Base3\MessageHub\Test\SettingsTab;
+
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Api\IFeature;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationDecision;
+use Base3\CoreFoundation\Translation\Api\ITranslation;
+use Base3\MessageHub\SettingsTab\MessagedeliverylogadminSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagehubdashboardSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagequeueadminSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagetemplateadminSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagetransportadminSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagetypesyncadminSettingsTab;
+use Base3\MessageHub\SettingsTab\MessagevariantadminSettingsTab;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use UiFoundation\Api\ISettingsTab;
+use Base3\UiFoundation\Api\ISettingsTab;
 
 final class MessageHubFeatureSettingsTabsTest extends TestCase {
 

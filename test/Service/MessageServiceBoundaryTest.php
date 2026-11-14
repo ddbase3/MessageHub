@@ -1,20 +1,35 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Service;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Event\Api\IEventManager;
-use Base3\Logger\Api\ILogger;
-use MessageHub\Service\MessageDeliveryService;
-use MessageHub\Service\MessageService;
-use MessageHub\Transport\NullMessageTransport;
-use MessagingFoundation\Api\IMessageDeliveryRepository;
-use MessagingFoundation\Api\IMessageQueueRepository;
-use MessagingFoundation\Api\IMessageQueueService;
-use MessagingFoundation\Api\IMessageTransportRegistry;
-use MessagingFoundation\Dto\Message;
-use MessagingFoundation\Dto\MessageDeliveryResult;
-use MessagingFoundation\Dto\QueuedMessage;
-use MessagingFoundation\Event\MessageFailedEvent;
+namespace Base3\MessageHub\Test\Service;
+
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\MessageHub\Service\MessageDeliveryService;
+use Base3\MessageHub\Service\MessageService;
+use Base3\MessageHub\Transport\NullMessageTransport;
+use Base3\MessagingFoundation\Api\IMessageDeliveryRepository;
+use Base3\MessagingFoundation\Api\IMessageQueueRepository;
+use Base3\MessagingFoundation\Api\IMessageQueueService;
+use Base3\MessagingFoundation\Api\IMessageTransportRegistry;
+use Base3\MessagingFoundation\Dto\Message;
+use Base3\MessagingFoundation\Dto\MessageDeliveryResult;
+use Base3\MessagingFoundation\Dto\QueuedMessage;
+use Base3\MessagingFoundation\Event\MessageFailedEvent;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

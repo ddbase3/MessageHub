@@ -1,14 +1,29 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Service;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Settings\Api\ISettingsStore;
-use MessageHub\Service\MessageTransportRegistry;
-use MessageHub\Transport\LogMessageTransport;
-use MessageHub\Transport\NullMessageTransport;
-use Base3\Logger\Api\ILogger;
-use MessagingFoundation\Api\IMessageTransport;
+namespace Base3\MessageHub\Test\Service;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\MessageHub\Service\MessageTransportRegistry;
+use Base3\MessageHub\Transport\LogMessageTransport;
+use Base3\MessageHub\Transport\NullMessageTransport;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\MessagingFoundation\Api\IMessageTransport;
 use PHPUnit\Framework\TestCase;
 
 final class MessageTransportRegistryTest extends TestCase {

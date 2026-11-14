@@ -1,16 +1,31 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Repository;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Database\Api\IDatabase;
-use MessageHub\Repository\DatabaseMessageDeliveryRepository;
-use MessageHub\Repository\DatabaseSchema;
-use MessagingFoundation\Api\IMessageIdGenerator;
-use MessagingFoundation\Dto\Message;
-use MessagingFoundation\Dto\MessageAddress;
-use MessagingFoundation\Dto\MessageAttachment;
-use MessagingFoundation\Dto\MessageDeliveryResult;
-use MessagingFoundation\Dto\QueuedMessage;
+namespace Base3\MessageHub\Test\Repository;
+
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\MessageHub\Repository\DatabaseMessageDeliveryRepository;
+use Base3\MessageHub\Repository\DatabaseSchema;
+use Base3\MessagingFoundation\Api\IMessageIdGenerator;
+use Base3\MessagingFoundation\Dto\Message;
+use Base3\MessagingFoundation\Dto\MessageAddress;
+use Base3\MessagingFoundation\Dto\MessageAttachment;
+use Base3\MessagingFoundation\Dto\MessageDeliveryResult;
+use Base3\MessagingFoundation\Dto\QueuedMessage;
 use PHPUnit\Framework\TestCase;
 
 final class DatabaseMessageDeliveryRepositoryTest extends TestCase {

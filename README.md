@@ -21,7 +21,7 @@ It provides the concrete runtime implementation for the contracts defined by `Me
 MessageHub intentionally does **not** hard-code a concrete mail or notification backend. Real delivery is delegated to discoverable implementations of:
 
 ```php
-MessagingFoundation\Api\IMessageTransport
+Base3\MessagingFoundation\Api\IMessageTransport
 ```
 
 This makes MessageHub usable with different delivery protocols and host environments. In an ILIAS-based BASE3 installation, the first concrete transport is usually provided by `Base3IliasLab` as a PHPMailer transport.
@@ -111,29 +111,29 @@ This keeps MessageHub reusable. The plugin owns messaging mechanics, but not pro
 Important contracts include:
 
 ```php
-MessagingFoundation\Api\IMessageService
-MessagingFoundation\Api\IMessageQueueService
-MessagingFoundation\Api\IMessageRenderer
-MessagingFoundation\Api\IMessageTransport
-MessagingFoundation\Api\IMessageTransportRegistry
-MessagingFoundation\Api\IMessageTypeProvider
-MessagingFoundation\Api\IMessageTypeSynchronizationService
-MessagingFoundation\Api\IMessageTemplateRepository
-MessagingFoundation\Api\IMessageVariantRepository
-MessagingFoundation\Api\IMessageQueueRepository
-MessagingFoundation\Api\IMessageDeliveryRepository
+Base3\MessagingFoundation\Api\IMessageService
+Base3\MessagingFoundation\Api\IMessageQueueService
+Base3\MessagingFoundation\Api\IMessageRenderer
+Base3\MessagingFoundation\Api\IMessageTransport
+Base3\MessagingFoundation\Api\IMessageTransportRegistry
+Base3\MessagingFoundation\Api\IMessageTypeProvider
+Base3\MessagingFoundation\Api\IMessageTypeSynchronizationService
+Base3\MessagingFoundation\Api\IMessageTemplateRepository
+Base3\MessagingFoundation\Api\IMessageVariantRepository
+Base3\MessagingFoundation\Api\IMessageQueueRepository
+Base3\MessagingFoundation\Api\IMessageDeliveryRepository
 ```
 
 Important DTOs include:
 
 ```php
-MessagingFoundation\Dto\Message
-MessagingFoundation\Dto\MessageAddress
-MessagingFoundation\Dto\MessageAttachment
-MessagingFoundation\Dto\MessageTemplate
-MessagingFoundation\Dto\MessageVariant
-MessagingFoundation\Dto\QueuedMessage
-MessagingFoundation\Dto\MessageDeliveryResult
+Base3\MessagingFoundation\Dto\Message
+Base3\MessagingFoundation\Dto\MessageAddress
+Base3\MessagingFoundation\Dto\MessageAttachment
+Base3\MessagingFoundation\Dto\MessageTemplate
+Base3\MessagingFoundation\Dto\MessageVariant
+Base3\MessagingFoundation\Dto\QueuedMessage
+Base3\MessagingFoundation\Dto\MessageDeliveryResult
 ```
 
 ### 3.2 Base3IliasLab
@@ -241,7 +241,7 @@ Only PHP classes under `src/` are discovered by the plugin class map. Templates,
 The plugin class is:
 
 ```php
-MessageHub\MessageHubPlugin
+Base3\MessageHub\MessageHubPlugin
 ```
 
 Technical name:
@@ -255,21 +255,21 @@ The plugin registers MessageHub services into the shared BASE3 container.
 Important service registrations:
 
 ```php
-MessageHub\Repository\DatabaseSchema
+Base3\MessageHub\Repository\DatabaseSchema
 
-MessagingFoundation\Api\IMessageIdGenerator
-MessagingFoundation\Api\IMessageTemplateRepository
-MessagingFoundation\Api\IMessageVariantRepository
-MessagingFoundation\Api\IMessageQueueRepository
-MessagingFoundation\Api\IMessageDeliveryRepository
+Base3\MessagingFoundation\Api\IMessageIdGenerator
+Base3\MessagingFoundation\Api\IMessageTemplateRepository
+Base3\MessagingFoundation\Api\IMessageVariantRepository
+Base3\MessagingFoundation\Api\IMessageQueueRepository
+Base3\MessagingFoundation\Api\IMessageDeliveryRepository
 
-MessagingFoundation\Api\IMessageRenderer
-MessagingFoundation\Api\IMessageTransportRegistry
-MessagingFoundation\Api\IMessageTypeSynchronizationService
-MessagingFoundation\Api\IMessageQueueService
-MessagingFoundation\Api\IMessageService
+Base3\MessagingFoundation\Api\IMessageRenderer
+Base3\MessagingFoundation\Api\IMessageTransportRegistry
+Base3\MessagingFoundation\Api\IMessageTypeSynchronizationService
+Base3\MessagingFoundation\Api\IMessageQueueService
+Base3\MessagingFoundation\Api\IMessageService
 
-MessageHub\Service\MessageDeliveryService
+Base3\MessageHub\Service\MessageDeliveryService
 ```
 
 The registrations use shared services and `NOOVERWRITE` where replacement should remain possible.
@@ -285,7 +285,7 @@ A message type is a discoverable definition of one kind of message.
 Consumer plugins define message types by implementing:
 
 ```php
-MessagingFoundation\Api\IMessageTypeProvider
+Base3\MessagingFoundation\Api\IMessageTypeProvider
 ```
 
 Example technical name:
@@ -367,7 +367,7 @@ A message is the runtime DTO that is queued or delivered.
 Class:
 
 ```php
-MessagingFoundation\Dto\Message
+Base3\MessagingFoundation\Dto\Message
 ```
 
 It contains:
@@ -493,7 +493,7 @@ A transport performs actual delivery.
 Contract:
 
 ```php
-MessagingFoundation\Api\IMessageTransport
+Base3\MessagingFoundation\Api\IMessageTransport
 ```
 
 Examples:
@@ -515,13 +515,13 @@ Message type synchronization discovers `IMessageTypeProvider` implementations an
 Service:
 
 ```php
-MessagingFoundation\Api\IMessageTypeSynchronizationService
+Base3\MessagingFoundation\Api\IMessageTypeSynchronizationService
 ```
 
 Implementation:
 
 ```php
-MessageHub\Service\MessageTypeSynchronizationService
+Base3\MessageHub\Service\MessageTypeSynchronizationService
 ```
 
 It creates:
@@ -538,7 +538,7 @@ It does **not** overwrite existing templates or variants.
 MessageHub creates its tables through:
 
 ```php
-MessageHub\Repository\DatabaseSchema
+Base3\MessageHub\Repository\DatabaseSchema
 ```
 
 The schema is created by calling:
@@ -945,7 +945,7 @@ MessageHub provides discoverable worker jobs.
 Class:
 
 ```php
-MessageHub\Job\MessageQueueWorkerJob
+Base3\MessageHub\Job\MessageQueueWorkerJob
 ```
 
 Technical name:
@@ -963,7 +963,7 @@ Claims queued messages and delivers them through the configured transport.
 The worker processes a batch of queue entries by calling:
 
 ```php
-MessageHub\Service\MessageDeliveryService::processBatch()
+Base3\MessageHub\Service\MessageDeliveryService::processBatch()
 ```
 
 ### 10.2 Delivery cleanup
@@ -971,7 +971,7 @@ MessageHub\Service\MessageDeliveryService::processBatch()
 Class:
 
 ```php
-MessageHub\Job\MessageDeliveryCleanupJob
+Base3\MessageHub\Job\MessageDeliveryCleanupJob
 ```
 
 Technical name:
@@ -998,14 +998,14 @@ messaging/default/retention_days
 
 MessageHub fires domain events through `IEventManager`.
 
-Events live in `MessagingFoundation\Event`.
+Events live in `Base3\MessagingFoundation\Event`.
 
 Important events:
 
 ```php
-MessagingFoundation\Event\MessageQueuedEvent
-MessagingFoundation\Event\MessageSentEvent
-MessagingFoundation\Event\MessageFailedEvent
+Base3\MessagingFoundation\Event\MessageQueuedEvent
+Base3\MessagingFoundation\Event\MessageSentEvent
+Base3\MessagingFoundation\Event\MessageFailedEvent
 ```
 
 Typical use cases:
@@ -1037,7 +1037,7 @@ Events are synchronous. They should not perform slow unrelated work directly.
 Transports are discoverable implementations of:
 
 ```php
-MessagingFoundation\Api\IMessageTransport
+Base3\MessagingFoundation\Api\IMessageTransport
 ```
 
 A transport must provide:
@@ -1055,7 +1055,7 @@ public function getSchema(): array;
 MessageHub provides:
 
 ```php
-MessageHub\Transport\LogMessageTransport
+Base3\MessageHub\Transport\LogMessageTransport
 ```
 
 Technical name:
@@ -1103,7 +1103,7 @@ It should use the public contracts from `MessagingFoundation`.
 
 namespace ExamplePlugin\Message;
 
-use MessagingFoundation\Api\IMessageTypeProvider;
+use Base3\MessagingFoundation\Api\IMessageTypeProvider;
 
 final class ExampleWelcomeMessageTypeProvider implements IMessageTypeProvider {
 
@@ -1170,9 +1170,9 @@ After the class map sees this provider, MessageHub can synchronize it into a tem
 ### 13.2 Render and enqueue a message
 
 ```php
-use MessagingFoundation\Api\IMessageRenderer;
-use MessagingFoundation\Api\IMessageService;
-use MessagingFoundation\Dto\MessageAddress;
+use Base3\MessagingFoundation\Api\IMessageRenderer;
+use Base3\MessagingFoundation\Api\IMessageService;
+use Base3\MessagingFoundation\Dto\MessageAddress;
 
 final class ExampleNotificationService {
 
@@ -1241,7 +1241,7 @@ MessageHub can synchronize message type providers into templates.
 Service:
 
 ```php
-MessagingFoundation\Api\IMessageTypeSynchronizationService
+Base3\MessagingFoundation\Api\IMessageTypeSynchronizationService
 ```
 
 Synchronize all discovered providers:
@@ -1364,7 +1364,7 @@ This makes it possible to inspect:
 MessageHub provides a check class:
 
 ```php
-MessageHub\Check\MessageHubCheck
+Base3\MessageHub\Check\MessageHubCheck
 ```
 
 Technical name:
@@ -1796,7 +1796,7 @@ MessageHub does not depend on Consumer plugin
 Implement:
 
 ```php
-MessagingFoundation\Api\IMessageTypeProvider
+Base3\MessagingFoundation\Api\IMessageTypeProvider
 ```
 
 Then synchronize message types.
@@ -1806,7 +1806,7 @@ Then synchronize message types.
 Implement:
 
 ```php
-MessagingFoundation\Api\IMessageTransport
+Base3\MessagingFoundation\Api\IMessageTransport
 ```
 
 Example technical names:
@@ -1957,7 +1957,7 @@ IAssetResolver
 Repositories use:
 
 ```php
-Base3\Database\Api\IDatabase
+Base3\CoreFoundation\Database\Api\IDatabase
 ```
 
 They call `connect()` before database work and use `escape()` when constructing SQL.
@@ -1967,7 +1967,7 @@ They call `connect()` before database work and use `escape()` when constructing 
 MessageHub logs through:
 
 ```php
-Base3\Logger\Api\ILogger
+Base3\CoreFoundation\Logger\Api\ILogger
 ```
 
 Use structured context with a stable scope:
@@ -1987,9 +1987,9 @@ Use structured context with a stable scope:
 
 namespace ExamplePlugin\Service;
 
-use MessagingFoundation\Api\IMessageRenderer;
-use MessagingFoundation\Api\IMessageService;
-use MessagingFoundation\Dto\MessageAddress;
+use Base3\MessagingFoundation\Api\IMessageRenderer;
+use Base3\MessagingFoundation\Api\IMessageService;
+use Base3\MessagingFoundation\Dto\MessageAddress;
 
 final class ExampleMessageService {
 

@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Repository;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Database\Api\IDatabase;
-use MessagingFoundation\Api\IMessageIdGenerator;
-use MessagingFoundation\Api\IMessageTemplateRepository;
-use MessagingFoundation\Dto\MessageTemplate;
+namespace Base3\MessageHub\Repository;
+
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\MessagingFoundation\Api\IMessageIdGenerator;
+use Base3\MessagingFoundation\Api\IMessageTemplateRepository;
+use Base3\MessagingFoundation\Dto\MessageTemplate;
 
 final class DatabaseMessageTemplateRepository implements IMessageTemplateRepository {
 

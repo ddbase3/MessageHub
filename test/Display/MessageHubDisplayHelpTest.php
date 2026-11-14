@@ -1,37 +1,52 @@
 <?php declare(strict_types=1);
 
-namespace MessageHub\Test\Display;
+/***********************************************************************
+ * This file is part of MessageHub for BASE3 Framework.
+ *
+ * MessageHub implements queue-based messaging for BASE3 applications.
+ * It manages templates, retries, deliveries and transport discovery.
+ * Transport-neutral contracts are defined by MessagingFoundation.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ * https://github.com/ddbase3/MessageHub
+ **********************************************************************/
 
-use Base3\Api\IAssetResolver;
-use Base3\Api\IDisplay;
-use Base3\Api\IMvcView;
-use Base3\Api\IRequest;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Database\Api\IDatabase;
-use Base3\Event\Api\IEventManager;
-use Base3\Language\Api\ILanguage;
-use Base3\LinkTarget\Api\ILinkTargetService;
-use Base3\Logger\Api\ILogger;
-use Base3\Settings\Api\ISettingsStore;
-use MessageHub\Display\MessageDeliveryLogAdminDisplay;
-use MessageHub\Display\MessageHubDashboardDisplay;
-use MessageHub\Display\MessageQueueAdminDisplay;
-use MessageHub\Display\MessageTemplateAdminDisplay;
-use MessageHub\Display\MessageTransportAdminDisplay;
-use MessageHub\Display\MessageTypeSyncAdminDisplay;
-use MessageHub\Display\MessageVariantAdminDisplay;
-use MessageHub\Repository\DatabaseSchema;
-use MessageHub\Service\MessageDeliveryService;
-use MessageHub\Service\MessageFilterOptionService;
-use MessagingFoundation\Api\IMessageDeliveryRepository;
-use MessagingFoundation\Api\IMessageIdGenerator;
-use MessagingFoundation\Api\IMessageQueueRepository;
-use MessagingFoundation\Api\IMessageTemplateRepository;
-use MessagingFoundation\Api\IMessageTransportRegistry;
-use MessagingFoundation\Api\IMessageTypeSynchronizationService;
-use MessagingFoundation\Api\IMessageVariantRepository;
+namespace Base3\MessageHub\Test\Display;
+
+use Base3\CoreFoundation\Api\IAssetResolver;
+use Base3\CoreFoundation\Api\IDisplay;
+use Base3\CoreFoundation\Api\IMvcView;
+use Base3\CoreFoundation\Api\IRequest;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Language\Api\ILanguage;
+use Base3\CoreFoundation\LinkTarget\Api\ILinkTargetService;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\MessageHub\Display\MessageDeliveryLogAdminDisplay;
+use Base3\MessageHub\Display\MessageHubDashboardDisplay;
+use Base3\MessageHub\Display\MessageQueueAdminDisplay;
+use Base3\MessageHub\Display\MessageTemplateAdminDisplay;
+use Base3\MessageHub\Display\MessageTransportAdminDisplay;
+use Base3\MessageHub\Display\MessageTypeSyncAdminDisplay;
+use Base3\MessageHub\Display\MessageVariantAdminDisplay;
+use Base3\MessageHub\Repository\DatabaseSchema;
+use Base3\MessageHub\Service\MessageDeliveryService;
+use Base3\MessageHub\Service\MessageFilterOptionService;
+use Base3\MessagingFoundation\Api\IMessageDeliveryRepository;
+use Base3\MessagingFoundation\Api\IMessageIdGenerator;
+use Base3\MessagingFoundation\Api\IMessageQueueRepository;
+use Base3\MessagingFoundation\Api\IMessageTemplateRepository;
+use Base3\MessagingFoundation\Api\IMessageTransportRegistry;
+use Base3\MessagingFoundation\Api\IMessageTypeSynchronizationService;
+use Base3\MessagingFoundation\Api\IMessageVariantRepository;
 use PHPUnit\Framework\TestCase;
-use UiFoundation\Api\IRichTextEditorDisplay;
+use Base3\UiFoundation\Api\IRichTextEditorDisplay;
 
 final class MessageHubDisplayHelpTest extends TestCase {
 
